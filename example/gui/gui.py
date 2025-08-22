@@ -1,10 +1,17 @@
 #!/usr/bin/env python3
 """
-Investment Portfolio Tracker - Main GUI Application
+💰 Investment Portfolio Tracker - Main GUI Application
 
-This file opens the GUI and connects to the backend database to let you visualize and manage your investments.
-It allows you to select a database file (my_assets.db) and visualize all the information,
-as well as modify your portfolio through the GUI interface.
+This application helps you track your investment portfolio with real-time price updates,
+transaction management, and comprehensive analytics. It supports stocks, ETFs, cryptocurrencies,
+bonds, and commodities with automatic currency conversion to EUR.
+
+Features:
+- 📊 Real-time portfolio dashboard with charts
+- 💰 Transaction tracking (buy, sell, dividend, fees)
+- 🎯 Asset management with automatic price updates
+- 🌍 Multi-currency support with auto EUR conversion
+- 📈 Historical price tracking and analytics
 """
 
 import sys
@@ -25,11 +32,33 @@ def select_database():
     
     # Ask user if they want to create new or open existing database
     msg = QMessageBox()
-    msg.setWindowTitle("Database Selection")
-    msg.setText("Would you like to open an existing database or create a new one?")
+    msg.setWindowTitle("Investment Portfolio Tracker")
+    msg.setText("<span style='color: #e2e8f0;'>Welcome! Would you like to open an existing database or create a new one?</span>")
+    msg.setInformativeText("<span style='color: #e2e8f0;'>Choose 'Open Existing' to load your portfolio data, or 'Create New' to start fresh.</span>")
     msg.setStandardButtons(QMessageBox.Open | QMessageBox.Save | QMessageBox.Cancel)
     msg.button(QMessageBox.Open).setText("Open Existing")
     msg.button(QMessageBox.Save).setText("Create New")
+    msg.button(QMessageBox.Cancel).setText("Cancel")
+    
+    # Style the message box
+    msg.setStyleSheet("""
+        QMessageBox {
+            background-color: #2d3748;
+            color: #e2e8f0;
+        }
+        QMessageBox QPushButton {
+            background-color: #0078d4;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-weight: 600;
+            min-width: 100px;
+        }
+        QMessageBox QPushButton:hover {
+            background-color: #106ebe;
+        }
+    """)
     
     choice = msg.exec()
     
@@ -98,12 +127,16 @@ def main():
         
         print("GUI launched successfully!")
         print("Features available:")
-        print("  Dashboard - View portfolio overview and performance")
-        print("  Transactions - Add buy/sell/dividend transactions")
-        print("  Asset Management - Add new assets and update prices")
+        print("  📊 Dashboard - View portfolio overview and performance")
+        print("  💰 Transactions - Add buy/sell/dividend transactions")
+        print("  🎯 Asset Management - Add new assets and update prices")
         print("")
-        print("The application will automatically update prices every 5 minutes.")
-        print("You can also manually refresh prices using the refresh button.")
+        print("💡 Tips:")
+        print("  • All prices are automatically converted to EUR")
+        print("  • Crypto assets use CoinGecko API (13,000+ supported)")
+        print("  • Stocks/ETFs use Yahoo Finance with currency detection")
+        print("  • The application auto-updates prices every 5 minutes")
+        print("  • Use the refresh button for manual price updates")
         
         # Run the application
         return app.exec()

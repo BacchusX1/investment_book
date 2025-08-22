@@ -7,7 +7,7 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                                QGroupBox, QFormLayout, QMessageBox, QHeaderView,
                                QSplitter, QFrame)
 from PySide6.QtCore import Qt, QDate, QTimer
-from PySide6.QtGui import QFont, QPalette
+from PySide6.QtGui import QFont, QPalette, QColor
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
@@ -30,102 +30,178 @@ class InvestmentGUI(QMainWindow):
         self.timer.start(300000)  # 5 minutes
     
     def init_ui(self):
-        self.setWindowTitle("Investment Portfolio Tracker")
-        self.setGeometry(100, 100, 1400, 900)
+        self.setWindowTitle("💰 Investment Portfolio Tracker")
+        self.setGeometry(100, 100, 1600, 1000)
         
-        # Apply dark theme
+        # Set window icon (if available)
+        # self.setWindowIcon(QIcon("assets/icon.png"))
+        
+        # Apply modern dark theme with improved aesthetics
         self.setStyleSheet("""
             QMainWindow {
-                background-color: #2b2b2b;
-                color: #ffffff;
+                background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                    stop: 0 #2d3748, stop: 1 #1a202c);
+                color: #e2e8f0;
             }
             QWidget {
-                background-color: #2b2b2b;
-                color: #ffffff;
+                background-color: transparent;
+                color: #e2e8f0;
+                font-family: 'Segoe UI', 'San Francisco', Arial, sans-serif;
             }
             QTabWidget::pane {
-                border: 1px solid #555555;
-                background-color: #2b2b2b;
+                border: 2px solid #4a5568;
+                background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                    stop: 0 #2d3748, stop: 1 #1a202c);
+                border-radius: 8px;
+                margin-top: 8px;
             }
             QTabBar::tab {
-                background-color: #404040;
-                color: #ffffff;
-                padding: 10px;
-                margin-right: 2px;
+                background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                    stop: 0 #4a5568, stop: 1 #2d3748);
+                color: #cbd5e0;
+                padding: 12px 20px;
+                margin-right: 3px;
+                border-top-left-radius: 8px;
+                border-top-right-radius: 8px;
+                border: 1px solid #4a5568;
+                font-weight: 600;
+                min-width: 120px;
             }
             QTabBar::tab:selected {
-                background-color: #606060;
+                background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                    stop: 0 #0078d4, stop: 1 #0056b3);
+                color: #ffffff;
+                border-bottom: none;
+            }
+            QTabBar::tab:hover {
+                background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                    stop: 0 #5a6578, stop: 1 #3d4852);
             }
             QTableWidget {
-                background-color: #353535;
-                alternate-background-color: #404040;
-                gridline-color: #555555;
+                background-color: #2d3748;
+                alternate-background-color: #374151;
+                gridline-color: #4a5568;
                 selection-background-color: #0078d4;
-                color: #ffffff;
+                color: #e2e8f0;
+                border: 1px solid #4a5568;
+                border-radius: 8px;
+                font-size: 11px;
             }
             QTableWidget::item {
-                color: #ffffff;
-                padding: 5px;
-            }
-            QHeaderView::section {
-                background-color: #404040;
-                color: #ffffff;
+                color: #e2e8f0;
                 padding: 8px;
-                border: 1px solid #555555;
+                border-bottom: 1px solid #374151;
             }
-            QPushButton {
+            QTableWidget::item:selected {
                 background-color: #0078d4;
                 color: #ffffff;
+            }
+            QHeaderView::section {
+                background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                    stop: 0 #4a5568, stop: 1 #374151);
+                color: #f7fafc;
+                padding: 10px;
+                border: 1px solid #2d3748;
+                font-weight: 600;
+                font-size: 12px;
+            }
+            QPushButton {
+                background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                    stop: 0 #0078d4, stop: 1 #0056b3);
+                color: #ffffff;
                 border: none;
-                padding: 8px 16px;
-                border-radius: 4px;
+                padding: 10px 20px;
+                border-radius: 6px;
+                font-weight: 600;
+                font-size: 12px;
+                min-height: 16px;
             }
             QPushButton:hover {
-                background-color: #106ebe;
+                background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                    stop: 0 #106ebe, stop: 1 #0056b3);
+                transform: translateY(-1px);
+            }
+            QPushButton:pressed {
+                background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                    stop: 0 #004494, stop: 1 #003d82);
             }
             QLineEdit, QDoubleSpinBox, QComboBox, QDateEdit, QTextEdit {
-                background-color: #404040;
-                color: #ffffff;
-                border: 1px solid #555555;
-                padding: 5px;
-                border-radius: 3px;
+                background-color: #374151;
+                color: #e2e8f0;
+                border: 2px solid #4a5568;
+                padding: 8px 12px;
+                border-radius: 6px;
+                font-size: 12px;
+            }
+            QLineEdit:focus, QDoubleSpinBox:focus, QComboBox:focus, 
+            QDateEdit:focus, QTextEdit:focus {
+                border-color: #0078d4;
+                background-color: #2d3748;
             }
             QComboBox::drop-down {
                 border: none;
-                background-color: #555555;
+                background-color: transparent;
+                width: 20px;
             }
             QComboBox::down-arrow {
                 image: none;
-                border-left: 5px solid transparent;
-                border-right: 5px solid transparent;
-                border-top: 5px solid #ffffff;
-                margin-right: 5px;
+                border-left: 6px solid transparent;
+                border-right: 6px solid transparent;
+                border-top: 6px solid #cbd5e0;
+                margin-right: 8px;
+            }
+            QComboBox QAbstractItemView {
+                background-color: #374151;
+                color: #e2e8f0;
+                border: 1px solid #4a5568;
+                border-radius: 6px;
+                selection-background-color: #0078d4;
             }
             QSpinBox, QDoubleSpinBox {
-                background-color: #404040;
-                color: #ffffff;
-                border: 1px solid #555555;
+                background-color: #374151;
+                color: #e2e8f0;
+                border: 2px solid #4a5568;
+                border-radius: 6px;
+                padding: 8px;
             }
             QGroupBox {
-                font-weight: bold;
-                border: 2px solid #555555;
-                border-radius: 5px;
-                margin-top: 10px;
-                padding-top: 10px;
-                color: #ffffff;
+                font-weight: 600;
+                font-size: 14px;
+                border: 2px solid #4a5568;
+                border-radius: 8px;
+                margin-top: 16px;
+                padding-top: 12px;
+                color: #f7fafc;
+                background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                    stop: 0 #374151, stop: 1 #2d3748);
             }
             QGroupBox::title {
                 subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 5px 0 5px;
-                color: #ffffff;
+                left: 16px;
+                padding: 0 8px 0 8px;
+                color: #0078d4;
+                font-weight: 700;
             }
             QLabel {
-                color: #ffffff;
+                color: #e2e8f0;
                 background-color: transparent;
+                font-size: 12px;
             }
             QFormLayout QLabel {
-                color: #ffffff;
+                color: #cbd5e0;
+                font-weight: 500;
+            }
+            QScrollBar:vertical {
+                background-color: #374151;
+                width: 12px;
+                border-radius: 6px;
+            }
+            QScrollBar::handle:vertical {
+                background-color: #4a5568;
+                border-radius: 6px;
+            }
+            QScrollBar::handle:vertical:hover {
+                background-color: #5a6578;
             }
         """)
         
@@ -166,54 +242,75 @@ class InvestmentGUI(QMainWindow):
         self.total_invested_label = QLabel("Total Invested: €0.00")
         self.total_pnl_label = QLabel("P&L: €0.00 (0.00%)")
         
-        # Style the summary labels
+        # Style the summary labels with improved design
+        summary_style = """
+            QLabel {
+                padding: 16px;
+                border: 2px solid #4a5568;
+                border-radius: 12px;
+                margin: 8px;
+                background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                    stop: 0 #374151, stop: 1 #2d3748);
+                font-size: 14px;
+                font-weight: 600;
+                min-height: 20px;
+            }
+        """
+        
         for label in [self.total_value_label, self.total_invested_label, self.total_pnl_label]:
-            label.setFont(QFont("Arial", 12, QFont.Bold))
-            label.setStyleSheet("padding: 10px; border: 1px solid #555555; border-radius: 5px; margin: 5px;")
+            label.setFont(QFont("Segoe UI", 12, QFont.Bold))
+            label.setStyleSheet(summary_style)
         
         header_layout.addWidget(self.total_value_label)
         header_layout.addWidget(self.total_invested_label)
         header_layout.addWidget(self.total_pnl_label)
         header_group.setLayout(header_layout)
         
-        # Refresh button
+        # Refresh button with improved styling
         refresh_btn = QPushButton("Refresh Prices")
+        refresh_btn.setStyleSheet("""
+            QPushButton {
+                background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                    stop: 0 #48bb78, stop: 1 #38a169);
+                font-size: 13px;
+                padding: 12px 24px;
+                border-radius: 8px;
+                margin: 8px;
+            }
+            QPushButton:hover {
+                background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                    stop: 0 #4fd180, stop: 1 #48bb78);
+            }
+        """)
         refresh_btn.clicked.connect(self.update_all_prices)
         
         layout.addWidget(header_group)
         layout.addWidget(refresh_btn)
         
-        # Create splitter for charts and table
+        # Create splitter for chart and table
         splitter = QSplitter(Qt.Horizontal)
         
-        # Charts widget
-        charts_widget = QWidget()
-        charts_layout = QVBoxLayout()
+        # Portfolio composition chart (by asset type)
+        chart_widget = QWidget()
+        chart_layout = QVBoxLayout()
         
-        # Portfolio composition chart
-        self.portfolio_figure = Figure(figsize=(8, 6), facecolor='#2b2b2b')
+        self.portfolio_figure = Figure(figsize=(8, 8), facecolor='#2b2b2b')
         self.portfolio_canvas = FigureCanvas(self.portfolio_figure)
-        charts_layout.addWidget(self.portfolio_canvas)
+        chart_layout.addWidget(self.portfolio_canvas)
+        chart_widget.setLayout(chart_layout)
         
-        # Portfolio value over time chart
-        self.timeline_figure = Figure(figsize=(8, 4), facecolor='#2b2b2b')
-        self.timeline_canvas = FigureCanvas(self.timeline_figure)
-        charts_layout.addWidget(self.timeline_canvas)
-        
-        charts_widget.setLayout(charts_layout)
-        
-        # Portfolio table
+        # Portfolio table with profit % column
         self.portfolio_table = QTableWidget()
-        self.portfolio_table.setColumnCount(8)
+        self.portfolio_table.setColumnCount(9)
         self.portfolio_table.setHorizontalHeaderLabels([
-            "Symbol", "Name", "Type", "Amount", "Price", "Value", "Invested", "P&L (%)"
+            "Symbol", "Name", "Type", "Amount", "Price", "Value", "Invested", "P&L (EUR)", "P&L (%)"
         ])
         self.portfolio_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.portfolio_table.setAlternatingRowColors(True)
         
-        splitter.addWidget(charts_widget)
+        splitter.addWidget(chart_widget)
         splitter.addWidget(self.portfolio_table)
-        splitter.setSizes([600, 400])
+        splitter.setSizes([400, 600])
         
         layout.addWidget(splitter)
         widget.setLayout(layout)
@@ -240,10 +337,12 @@ class InvestmentGUI(QMainWindow):
         self.fees_spin.setMaximum(999999999.99)
         self.fees_spin.setDecimals(2)
         self.platform_edit = QLineEdit()
+        self.platform_edit.setPlaceholderText("e.g., Binance, eToro, Interactive Brokers")
         self.date_edit = QDateEdit()
         self.date_edit.setDate(QDate.currentDate())
         self.notes_edit = QTextEdit()
-        self.notes_edit.setMaximumHeight(60)
+        self.notes_edit.setMaximumHeight(80)
+        self.notes_edit.setPlaceholderText("Optional notes about this transaction...")
         
         form_layout.addRow("Asset:", self.asset_combo)
         form_layout.addRow("Type:", self.transaction_type_combo)
@@ -255,6 +354,15 @@ class InvestmentGUI(QMainWindow):
         form_layout.addRow("Notes:", self.notes_edit)
         
         add_transaction_btn = QPushButton("Add Transaction")
+        add_transaction_btn.setStyleSheet("""
+            QPushButton {
+                background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                    stop: 0 #48bb78, stop: 1 #38a169);
+                font-size: 13px;
+                padding: 12px 24px;
+                margin: 8px 0px;
+            }
+        """)
         add_transaction_btn.clicked.connect(self.add_transaction)
         form_layout.addRow(add_transaction_btn)
         
@@ -285,10 +393,13 @@ class InvestmentGUI(QMainWindow):
         form_layout = QFormLayout()
         
         self.new_symbol_edit = QLineEdit()
+        self.new_symbol_edit.setPlaceholderText("e.g., AAPL, BTC, VWCE.DE")
         self.new_name_edit = QLineEdit()
+        self.new_name_edit.setPlaceholderText("e.g., Apple Inc., Bitcoin")
         self.new_type_combo = QComboBox()
         self.new_type_combo.addItems(["stock", "etf", "crypto", "bond", "commodity"])
         self.new_platform_edit = QLineEdit()
+        self.new_platform_edit.setPlaceholderText("e.g., Interactive Brokers, Binance")
         
         form_layout.addRow("Symbol:", self.new_symbol_edit)
         form_layout.addRow("Name:", self.new_name_edit)
@@ -296,6 +407,15 @@ class InvestmentGUI(QMainWindow):
         form_layout.addRow("Platform:", self.new_platform_edit)
         
         add_asset_btn = QPushButton("Add Asset")
+        add_asset_btn.setStyleSheet("""
+            QPushButton {
+                background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                    stop: 0 #48bb78, stop: 1 #38a169);
+                font-size: 13px;
+                padding: 12px 24px;
+                margin: 8px 0px;
+            }
+        """)
         add_asset_btn.clicked.connect(self.add_asset)
         form_layout.addRow(add_asset_btn)
         
@@ -309,11 +429,21 @@ class InvestmentGUI(QMainWindow):
         self.manual_price_spin = QDoubleSpinBox()
         self.manual_price_spin.setMaximum(999999999.99)
         self.manual_price_spin.setDecimals(2)
+        # Note: QDoubleSpinBox doesn't support placeholder text
         
         price_layout.addRow("Asset:", self.price_asset_combo)
-        price_layout.addRow("New Price:", self.manual_price_spin)
+        price_layout.addRow("New Price (EUR):", self.manual_price_spin)
         
         update_price_btn = QPushButton("Update Price")
+        update_price_btn.setStyleSheet("""
+            QPushButton {
+                background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                    stop: 0 #ed8936, stop: 1 #dd6b20);
+                font-size: 13px;
+                padding: 12px 24px;
+                margin: 8px 0px;
+            }
+        """)
         update_price_btn.clicked.connect(self.update_manual_price)
         price_layout.addRow(update_price_btn)
         
@@ -331,13 +461,21 @@ class InvestmentGUI(QMainWindow):
         # Control buttons
         control_layout = QHBoxLayout()
         delete_asset_btn = QPushButton("Delete Selected Asset")
+        delete_asset_btn.setStyleSheet("""
+            QPushButton {
+                background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                    stop: 0 #f56565, stop: 1 #e53e3e);
+                font-size: 12px;
+                padding: 10px 16px;
+            }
+        """)
         delete_asset_btn.clicked.connect(self.delete_selected_asset)
         control_layout.addWidget(delete_asset_btn)
         control_layout.addStretch()
         
         layout.addWidget(form_group)
         layout.addWidget(price_group)
-        layout.addWidget(QLabel("Assets"))
+        layout.addWidget(QLabel("Assets Portfolio"))
         layout.addLayout(control_layout)
         layout.addWidget(self.assets_table)
         
@@ -370,16 +508,21 @@ class InvestmentGUI(QMainWindow):
             self.portfolio_table.setItem(row, 5, QTableWidgetItem(f"€{asset['current_value']:.2f}"))
             self.portfolio_table.setItem(row, 6, QTableWidgetItem(f"€{asset['total_invested']:.2f}"))
             
-            pnl_text = f"€{asset['profit_loss']:.2f} ({asset['profit_loss_percent']:.1f}%)"
-            pnl_item = QTableWidgetItem(pnl_text)
-            
-            # Color coding for profit/loss
+            # P&L in EUR
+            pnl_eur_item = QTableWidgetItem(f"€{asset['profit_loss']:.2f}")
             if asset['profit_loss'] > 0:
-                pnl_item.setBackground(Qt.darkGreen)
+                pnl_eur_item.setForeground(QColor('#4CAF50'))  # Green for profit
             elif asset['profit_loss'] < 0:
-                pnl_item.setBackground(Qt.darkRed)
+                pnl_eur_item.setForeground(QColor('#F44336'))  # Red for loss
+            self.portfolio_table.setItem(row, 7, pnl_eur_item)
             
-            self.portfolio_table.setItem(row, 7, pnl_item)
+            # P&L in %
+            pnl_pct_item = QTableWidgetItem(f"{asset['profit_loss_percent']:.1f}%")
+            if asset['profit_loss_percent'] > 0:
+                pnl_pct_item.setForeground(QColor('#4CAF50'))  # Green for profit
+            elif asset['profit_loss_percent'] < 0:
+                pnl_pct_item.setForeground(QColor('#F44336'))  # Red for loss
+            self.portfolio_table.setItem(row, 8, pnl_pct_item)
             
             total_value += asset['current_value']
             total_invested += asset['total_invested']
@@ -392,13 +535,51 @@ class InvestmentGUI(QMainWindow):
         self.total_invested_label.setText(f"Total Invested: €{total_invested:.2f}")
         self.total_pnl_label.setText(f"P&L: €{total_pnl:.2f} ({total_pnl_percent:.1f}%)")
         
-        # Color code the P&L label
+        # Color code the P&L label with improved styling
         if total_pnl > 0:
-            self.total_pnl_label.setStyleSheet("padding: 10px; border: 1px solid #555555; border-radius: 5px; margin: 5px; background-color: #1a4a1a; color: #4ade80;")
+            self.total_pnl_label.setStyleSheet("""
+                QLabel {
+                    padding: 16px;
+                    border: 2px solid #48bb78;
+                    border-radius: 12px;
+                    margin: 8px;
+                    background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                        stop: 0 #2f855a, stop: 1 #276749);
+                    color: #9ae6b4;
+                    font-size: 14px;
+                    font-weight: 600;
+                    min-height: 20px;
+                }
+            """)
         elif total_pnl < 0:
-            self.total_pnl_label.setStyleSheet("padding: 10px; border: 1px solid #555555; border-radius: 5px; margin: 5px; background-color: #4a1a1a; color: #f87171;")
+            self.total_pnl_label.setStyleSheet("""
+                QLabel {
+                    padding: 16px;
+                    border: 2px solid #f56565;
+                    border-radius: 12px;
+                    margin: 8px;
+                    background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                        stop: 0 #c53030, stop: 1 #9b2c2c);
+                    color: #feb2b2;
+                    font-size: 14px;
+                    font-weight: 600;
+                    min-height: 20px;
+                }
+            """)
         else:
-            self.total_pnl_label.setStyleSheet("padding: 10px; border: 1px solid #555555; border-radius: 5px; margin: 5px;")
+            self.total_pnl_label.setStyleSheet("""
+                QLabel {
+                    padding: 16px;
+                    border: 2px solid #4a5568;
+                    border-radius: 12px;
+                    margin: 8px;
+                    background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                        stop: 0 #374151, stop: 1 #2d3748);
+                    font-size: 14px;
+                    font-weight: 600;
+                    min-height: 20px;
+                }
+            """)
     
     def load_transactions_data(self):
         """Load and display transactions data"""
@@ -449,58 +630,60 @@ class InvestmentGUI(QMainWindow):
         portfolio = self.tracker.get_portfolio_summary()
         
         if not portfolio:
-            # Clear charts if no portfolio data
+            # Clear chart if no portfolio data
             self.portfolio_figure.clear()
-            self.timeline_figure.clear()
             self.portfolio_canvas.draw()
-            self.timeline_canvas.draw()
             return
         
-        # Portfolio composition pie chart
+        # Portfolio composition by asset type pie chart
         self.portfolio_figure.clear()
         ax1 = self.portfolio_figure.add_subplot(111)
         
-        symbols = [asset['symbol'] for asset in portfolio]
-        values = [asset['current_value'] for asset in portfolio]
-        colors = plt.cm.Set3(range(len(symbols)))
+        # Group by asset type
+        type_values = {}
+        for asset in portfolio:
+            asset_type = asset['asset_type'].lower()
+            if asset_type not in type_values:
+                type_values[asset_type] = 0
+            type_values[asset_type] += asset['current_value']
         
-        wedges, texts, autotexts = ax1.pie(values, labels=symbols, autopct='%1.1f%%', colors=colors)
+        # Filter out zero values
+        type_values = {k: v for k, v in type_values.items() if v > 0}
         
-        # Set text colors to white for better visibility
-        for text in texts:
-            text.set_color('white')
-        for autotext in autotexts:
-            autotext.set_color('white')
-            autotext.set_fontweight('bold')
+        if type_values:
+            types = list(type_values.keys())
+            values = list(type_values.values())
+            
+            # Color mapping for asset types
+            color_map = {
+                'stock': '#FF6B6B',
+                'etf': '#4ECDC4', 
+                'crypto': '#45B7D1',
+                'bond': '#FFA726',
+                'commodity': '#AB47BC'
+            }
+            colors = [color_map.get(asset_type, '#95A5A6') for asset_type in types]
+            
+            # Create labels with values
+            labels = [f"{asset_type.upper()}\n€{value:.2f}" for asset_type, value in zip(types, values)]
+            
+            wedges, texts, autotexts = ax1.pie(values, labels=labels, autopct='%1.1f%%', colors=colors, startangle=90)
+            
+            # Set text colors to white for better visibility
+            for text in texts:
+                text.set_color('white')
+                text.set_fontsize(10)
+            for autotext in autotexts:
+                autotext.set_color('white')
+                autotext.set_fontweight('bold')
+                autotext.set_fontsize(9)
         
-        ax1.set_title('Portfolio Composition', color='white', fontsize=14, fontweight='bold')
+        ax1.set_title('Portfolio Composition by Asset Type', color='white', fontsize=14, fontweight='bold')
         ax1.set_facecolor('#2b2b2b')
         
         self.portfolio_figure.patch.set_facecolor('#2b2b2b')
+        self.portfolio_figure.tight_layout()
         self.portfolio_canvas.draw()
-        
-        # Portfolio value timeline (simplified - using dummy data for now)
-        self.timeline_figure.clear()
-        ax2 = self.timeline_figure.add_subplot(111)
-        
-        # This is a simplified timeline - in a real app you'd track portfolio value over time
-        dates = pd.date_range(start='2024-01-01', end=datetime.now(), freq='D')[-30:]
-        total_value = sum(values) if values else 0
-        # Simulate some price movement
-        portfolio_values = [total_value * (1 + (i % 10 - 5) * 0.01) for i in range(len(dates))]
-        
-        ax2.plot(dates, portfolio_values, color='#4ade80', linewidth=2)
-        ax2.set_title('Portfolio Value (Last 30 Days)', color='white', fontsize=12, fontweight='bold')
-        ax2.set_facecolor('#2b2b2b')
-        ax2.tick_params(colors='white')
-        ax2.grid(True, alpha=0.3, color='white')
-        
-        # Set axis labels color
-        ax2.xaxis.label.set_color('white')
-        ax2.yaxis.label.set_color('white')
-        
-        self.timeline_figure.patch.set_facecolor('#2b2b2b')
-        self.timeline_canvas.draw()
     
     def add_asset(self):
         """Add a new asset"""
