@@ -56,7 +56,15 @@ def select_database():
 
 def main():
     """Main function to launch the Investment Portfolio Tracker"""
-    app = QApplication(sys.argv)
+    # Handle display issues gracefully
+    try:
+        app = QApplication(sys.argv)
+    except Exception as e:
+        print(f"Failed to initialize Qt application: {e}")
+        print("This might be due to display/X11 issues.")
+        print("Try running with: export QT_QPA_PLATFORM=offscreen")
+        print("Or ensure you have a proper display environment.")
+        return 1
     
     # Set application properties
     app.setApplicationName("Investment Portfolio Tracker")
@@ -71,7 +79,12 @@ def main():
     print("")
     
     # Select database
-    db_path = select_database()
+    try:
+        db_path = select_database()
+    except Exception as e:
+        print(f"Failed to show database selection dialog: {e}")
+        print("Using default database: my_assets.db")
+        db_path = "my_assets.db"
     
     if db_path is None:
         print("No database selected. Exiting...")
@@ -85,9 +98,9 @@ def main():
         
         print("GUI launched successfully!")
         print("Features available:")
-        print("  📊 Dashboard - View portfolio overview and performance")
-        print("  💰 Transactions - Add buy/sell/dividend transactions")
-        print("  🎯 Asset Management - Add new assets and update prices")
+        print("  Dashboard - View portfolio overview and performance")
+        print("  Transactions - Add buy/sell/dividend transactions")
+        print("  Asset Management - Add new assets and update prices")
         print("")
         print("The application will automatically update prices every 5 minutes.")
         print("You can also manually refresh prices using the refresh button.")
@@ -96,8 +109,9 @@ def main():
         return app.exec()
         
     except Exception as e:
-        QMessageBox.critical(None, "Error", f"Failed to launch application:\n{str(e)}")
         print(f"Error launching application: {e}")
+        print("You can still use the backend functionality by running:")
+        print("  python tests/test_backend.py")
         return 1
 
 if __name__ == "__main__":

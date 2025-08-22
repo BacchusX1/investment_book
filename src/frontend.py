@@ -39,6 +39,10 @@ class InvestmentGUI(QMainWindow):
                 background-color: #2b2b2b;
                 color: #ffffff;
             }
+            QWidget {
+                background-color: #2b2b2b;
+                color: #ffffff;
+            }
             QTabWidget::pane {
                 border: 1px solid #555555;
                 background-color: #2b2b2b;
@@ -57,6 +61,11 @@ class InvestmentGUI(QMainWindow):
                 alternate-background-color: #404040;
                 gridline-color: #555555;
                 selection-background-color: #0078d4;
+                color: #ffffff;
+            }
+            QTableWidget::item {
+                color: #ffffff;
+                padding: 5px;
             }
             QHeaderView::section {
                 background-color: #404040;
@@ -81,17 +90,42 @@ class InvestmentGUI(QMainWindow):
                 padding: 5px;
                 border-radius: 3px;
             }
+            QComboBox::drop-down {
+                border: none;
+                background-color: #555555;
+            }
+            QComboBox::down-arrow {
+                image: none;
+                border-left: 5px solid transparent;
+                border-right: 5px solid transparent;
+                border-top: 5px solid #ffffff;
+                margin-right: 5px;
+            }
+            QSpinBox, QDoubleSpinBox {
+                background-color: #404040;
+                color: #ffffff;
+                border: 1px solid #555555;
+            }
             QGroupBox {
                 font-weight: bold;
                 border: 2px solid #555555;
                 border-radius: 5px;
                 margin-top: 10px;
                 padding-top: 10px;
+                color: #ffffff;
             }
             QGroupBox::title {
                 subcontrol-origin: margin;
                 left: 10px;
                 padding: 0 5px 0 5px;
+                color: #ffffff;
+            }
+            QLabel {
+                color: #ffffff;
+                background-color: transparent;
+            }
+            QFormLayout QLabel {
+                color: #ffffff;
             }
         """)
         
@@ -108,9 +142,9 @@ class InvestmentGUI(QMainWindow):
         self.assets_tab = self.create_assets_tab()
         
         # Add tabs to widget
-        self.tab_widget.addTab(self.dashboard_tab, "📊 Dashboard")
-        self.tab_widget.addTab(self.transactions_tab, "💰 Transactions")
-        self.tab_widget.addTab(self.assets_tab, "🎯 Assets Management")
+        self.tab_widget.addTab(self.dashboard_tab, "Dashboard")
+        self.tab_widget.addTab(self.transactions_tab, "Transactions")
+        self.tab_widget.addTab(self.assets_tab, "Assets Management")
         
         # Main layout
         main_layout = QVBoxLayout()
@@ -143,7 +177,7 @@ class InvestmentGUI(QMainWindow):
         header_group.setLayout(header_layout)
         
         # Refresh button
-        refresh_btn = QPushButton("🔄 Refresh Prices")
+        refresh_btn = QPushButton("Refresh Prices")
         refresh_btn.clicked.connect(self.update_all_prices)
         
         layout.addWidget(header_group)
@@ -415,6 +449,11 @@ class InvestmentGUI(QMainWindow):
         portfolio = self.tracker.get_portfolio_summary()
         
         if not portfolio:
+            # Clear charts if no portfolio data
+            self.portfolio_figure.clear()
+            self.timeline_figure.clear()
+            self.portfolio_canvas.draw()
+            self.timeline_canvas.draw()
             return
         
         # Portfolio composition pie chart
@@ -425,7 +464,15 @@ class InvestmentGUI(QMainWindow):
         values = [asset['current_value'] for asset in portfolio]
         colors = plt.cm.Set3(range(len(symbols)))
         
-        ax1.pie(values, labels=symbols, autopct='%1.1f%%', colors=colors, textprops={'color': 'white'})
+        wedges, texts, autotexts = ax1.pie(values, labels=symbols, autopct='%1.1f%%', colors=colors)
+        
+        # Set text colors to white for better visibility
+        for text in texts:
+            text.set_color('white')
+        for autotext in autotexts:
+            autotext.set_color('white')
+            autotext.set_fontweight('bold')
+        
         ax1.set_title('Portfolio Composition', color='white', fontsize=14, fontweight='bold')
         ax1.set_facecolor('#2b2b2b')
         
@@ -438,7 +485,7 @@ class InvestmentGUI(QMainWindow):
         
         # This is a simplified timeline - in a real app you'd track portfolio value over time
         dates = pd.date_range(start='2024-01-01', end=datetime.now(), freq='D')[-30:]
-        total_value = sum(values)
+        total_value = sum(values) if values else 0
         # Simulate some price movement
         portfolio_values = [total_value * (1 + (i % 10 - 5) * 0.01) for i in range(len(dates))]
         
@@ -446,7 +493,11 @@ class InvestmentGUI(QMainWindow):
         ax2.set_title('Portfolio Value (Last 30 Days)', color='white', fontsize=12, fontweight='bold')
         ax2.set_facecolor('#2b2b2b')
         ax2.tick_params(colors='white')
-        ax2.grid(True, alpha=0.3)
+        ax2.grid(True, alpha=0.3, color='white')
+        
+        # Set axis labels color
+        ax2.xaxis.label.set_color('white')
+        ax2.yaxis.label.set_color('white')
         
         self.timeline_figure.patch.set_facecolor('#2b2b2b')
         self.timeline_canvas.draw()

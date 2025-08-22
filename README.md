@@ -60,7 +60,7 @@ python src/frontend.py
 ### Method 3: Backend Testing
 Test the backend functionality:
 ```bash
-python example/test_backend.py
+python tests/test_backend.py
 ```
 
 This creates a test database with sample data to verify everything works correctly.
@@ -123,6 +123,8 @@ investment_book/
 ├── example/
 │   ├── gui/
 │   │   └── gui.py         # Main entry point
+│   └── command_line_tool/
+├── tests/
 │   └── test_backend.py    # Backend testing script
 ├── data/                  # Data storage directory
 ├── requirements.txt       # Python dependencies
