@@ -43,3 +43,6 @@ htmlcov/
 # Keep data directory structure
 !data/
 !data/.gitkeep
+
+# Ignore all .db files
+*.db
