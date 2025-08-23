@@ -17,6 +17,14 @@ Personal investment tracking application with GUI and multi-currency support. Tr
 
 *Portfolio dashboard showing asset allocation, P&L tracking, and real-time pricing*
 
+![Dashboard Screenshot](screenshots/transaction.png)
+
+*Lets you add new transactions on available assets*
+
+![Dashboard Screenshot](screenshots/assets.png)
+
+*Lets you add new assets to your portfolio*
+
 ## Quick Start
 
 ```bash
