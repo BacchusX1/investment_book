@@ -78,11 +78,9 @@ def run_unittest_suite(test_module, description):
 
 def main():
     """Main test runner"""
-    print("🚀 Investment Portfolio Tracker - Complete Test Suite")
+    print("Investment Portfolio Tracker - Test Suite")
     print("=" * 65)
-    print("Running comprehensive validation of all components...")
     
-    # Change to tests directory
     test_dir = os.path.dirname(os.path.abspath(__file__))
     original_dir = os.getcwd()
     os.chdir(test_dir)
@@ -92,7 +90,7 @@ def main():
     
     try:
         # Test 1: Backend Unit Tests
-        print("\n🔧 BACKEND VALIDATION")
+        print("\n Backend Tests")
         success = run_test_suite(
             "Backend Functionality Test",
             "test_backend.py",
@@ -100,17 +98,8 @@ def main():
         )
         results.append(("Backend Tests", success))
         
-        # Test 2: GUI Import Tests  
-        print("\n🎨 GUI VALIDATION")
-        success = run_test_suite(
-            "GUI Import & Compatibility Test", 
-            "test_gui_imports.py",
-            "Tests GUI dependencies, imports, and QColor fix validation"
-        )
-        results.append(("GUI Tests", success))
-        
-        # Test 3: Comprehensive Integration Test
-        print("\n📊 INTEGRATION VALIDATION")
+        # Test 2: Comprehensive Integration Test
+        print("\n Integration Tests")
         success = run_test_suite(
             "Comprehensive Portfolio Test",
             "test_comprehensive.py", 
@@ -118,9 +107,9 @@ def main():
         )
         results.append(("Integration Tests", success))
         
-        # Test 4: Unit Tests (if available)
+        # Test 3: Unit Tests (if available)
         try:
-            print("\n🔬 UNIT TEST VALIDATION")
+            print("\n Unit Tests")
             import test_backend
             success = run_unittest_suite(
                 test_backend,
@@ -128,7 +117,7 @@ def main():
             )
             results.append(("Unit Tests", success))
         except ImportError:
-            print("ℹ️  Unit tests not available (normal for demo mode)")
+            print("Unit tests not available")
         
     finally:
         os.chdir(original_dir)
@@ -136,32 +125,25 @@ def main():
     # Summary Report
     elapsed_time = time.time() - start_time
     print(f"\n{'='*65}")
-    print("📋 TEST SUMMARY REPORT")
+    print("TEST SUMMARY")
     print(f"{'='*65}")
     
     passed = sum(1 for _, success in results if success)
     total = len(results)
     
-    print(f"⏱️  Total execution time: {elapsed_time:.1f} seconds")
-    print(f"📊 Test suites completed: {total}")
-    print(f"✅ Passed: {passed}")
-    print(f"❌ Failed: {total - passed}")
+    print(f"Time: {elapsed_time:.1f}s | Passed: {passed}/{total}")
     print("-" * 65)
     
     for test_name, success in results:
-        status = "✅ PASS" if success else "❌ FAIL"
+        status = "PASS" if success else "FAIL"
         print(f"{test_name:<25} {status}")
     
-    # Overall result
     if passed == total:
-        print(f"\n🎉 ALL TESTS PASSED! System ready for production use.")
-        print("🚀 You can now safely run the GUI application:")
-        print("   python demo.py")
-        print("   python example/gui/gui.py")
+        print(f"\nAll tests passed!")
+        print("Run: python src/web_frontend.py")
         return 0
     else:
-        print(f"\n⚠️  {total - passed} test suite(s) failed. Please review and fix issues.")
-        print("🔧 Check dependencies and imports before running the GUI.")
+        print(f"\n{total - passed} test(s) failed.")
         return 1
 
 if __name__ == "__main__":

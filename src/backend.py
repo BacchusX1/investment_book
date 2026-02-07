@@ -4,9 +4,21 @@ import yfinance as yf
 import requests
 import pandas as pd
 import time
+import logging
 from typing import Optional, List, Dict, Tuple
 
 #This script holds all my backend functions for the investment book
+
+# Configure logging to avoid I/O errors when stdout is unavailable
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+# Safe print function that won't crash on I/O errors
+def safe_print(msg):
+    try:
+        print(msg)
+    except (IOError, OSError):
+        logger.info(msg)
 
 class InvestmentTracker:
     def __init__(self, db_path: str = "my_assets.db"):
@@ -61,6 +73,17 @@ class InvestmentTracker:
             )
         ''')
         
+        # Create watchlist table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS watchlist (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                asset_symbol TEXT UNIQUE NOT NULL,
+                added_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                notes TEXT,
+                FOREIGN KEY (asset_symbol) REFERENCES assets (symbol)
+            )
+        ''')
+        
         conn.commit()
         conn.close()
     
@@ -82,7 +105,7 @@ class InvestmentTracker:
             self.update_single_asset_price(symbol.upper(), asset_type)
             return True
         except Exception as e:
-            print(f"Error adding asset: {e}")
+            safe_print(f"Error adding asset: {e}")
             return False
     
     def add_transaction(self, asset_symbol: str, transaction_type: str, amount: float, 
@@ -96,18 +119,18 @@ class InvestmentTracker:
             # Validate that the asset exists
             cursor.execute("SELECT symbol FROM assets WHERE symbol = ?", (asset_symbol.upper(),))
             if not cursor.fetchone():
-                print(f"Error: Asset {asset_symbol} does not exist. Please add the asset first.")
+                safe_print(f"Error: Asset {asset_symbol} does not exist. Please add the asset first.")
                 conn.close()
                 return False
             
             # Validate input data
             if amount <= 0:
-                print(f"Error: Amount must be positive, got {amount}")
+                safe_print(f"Error: Amount must be positive, got {amount}")
                 conn.close()
                 return False
                 
             if price_per_unit <= 0:
-                print(f"Error: Price per unit must be positive, got {price_per_unit}")
+                safe_print(f"Error: Price per unit must be positive, got {price_per_unit}")
                 conn.close()
                 return False
             
@@ -125,7 +148,7 @@ class InvestmentTracker:
             conn.close()
             return True
         except Exception as e:
-            print(f"Error adding transaction: {e}")
+            safe_print(f"Error adding transaction: {e}")
             return False
     
     def update_asset_prices(self) -> Dict[str, bool]:
@@ -145,7 +168,7 @@ class InvestmentTracker:
             if asset_type == 'crypto':
                 crypto_count += 1
                 if crypto_count > 1:  # Add delay after the first crypto call
-                    print(f"Waiting to avoid rate limits... ({crypto_count} crypto assets)")
+                    safe_print(f"Waiting to avoid rate limits... ({crypto_count} crypto assets)")
                     time.sleep(2)  # 2 second delay between crypto calls
             
             results[symbol] = self.update_single_asset_price(symbol, asset_type)
@@ -161,7 +184,7 @@ class InvestmentTracker:
             return self._crypto_symbols_cache
             
         try:
-            print("Fetching available cryptocurrency symbols from CoinGecko API...")
+            safe_print("Fetching available cryptocurrency symbols from CoinGecko API...")
             url = "https://api.coingecko.com/api/v3/coins/list"
             response = requests.get(url, timeout=10)
             if response.status_code == 200:
@@ -207,10 +230,10 @@ class InvestmentTracker:
                 # Cache the results
                 self._crypto_symbols_cache = crypto_map
                 self._cache_timestamp = datetime.datetime.now()
-                print(f"Successfully fetched {len(crypto_map)} cryptocurrency symbols")
+                safe_print(f"Successfully fetched {len(crypto_map)} cryptocurrency symbols")
                 return crypto_map
         except Exception as e:
-            print(f"Error fetching crypto symbols from API: {e}")
+            safe_print(f"Error fetching crypto symbols from API: {e}")
         
         # Fallback to basic list if API fails
         fallback_map = {
@@ -218,7 +241,7 @@ class InvestmentTracker:
             'LTC': 'litecoin', 'XRP': 'ripple', 'DOGE': 'dogecoin', 'BNB': 'binancecoin',
             'SOL': 'solana', 'MATIC': 'matic-network', 'AVAX': 'avalanche-2'
         }
-        print("Using fallback cryptocurrency list")
+        safe_print("Using fallback cryptocurrency list")
         return fallback_map
 
     def update_single_asset_price(self, symbol: str, asset_type: str = None) -> bool:
@@ -244,7 +267,7 @@ class InvestmentTracker:
                             if coin_id in data and 'eur' in data[coin_id]:
                                 price = data[coin_id]['eur']
                         elif response.status_code == 429:
-                            print(f"Rate limit hit for {symbol}. Waiting and retrying...")
+                            safe_print(f"Rate limit hit for {symbol}. Waiting and retrying...")
                             time.sleep(5)  # Wait 5 seconds and try once more
                             response = requests.get(url, timeout=15)
                             if response.status_code == 200:
@@ -252,11 +275,11 @@ class InvestmentTracker:
                                 if coin_id in data and 'eur' in data[coin_id]:
                                     price = data[coin_id]['eur']
                             else:
-                                print(f"Still rate limited for {symbol}")
+                                safe_print(f"Still rate limited for {symbol}")
                         else:
-                            print(f"CoinGecko API error for {symbol}: {response.status_code}")
+                            safe_print(f"CoinGecko API error for {symbol}: {response.status_code}")
                     except Exception as e:
-                        print(f"Error fetching crypto price for {symbol}: {e}")
+                        safe_print(f"Error fetching crypto price for {symbol}: {e}")
             else:
                 # Use yfinance for stocks, ETFs, bonds, commodities
                 try:
@@ -275,7 +298,7 @@ class InvestmentTracker:
                             if currency and currency.upper() == 'EUR':
                                 # Price is already in EUR, no conversion needed
                                 price = price_original
-                                print(f"Price for {symbol} already in EUR: €{price:.2f}")
+                                safe_print(f"Price for {symbol} already in EUR: €{price:.2f}")
                             else:
                                 # Convert to EUR (assume USD if currency not specified)
                                 try:
@@ -290,7 +313,7 @@ class InvestmentTracker:
                                     else:
                                         # Default to USD conversion if currency unknown
                                         conversion_pair = "EURUSD=X"
-                                        print(f"Unknown currency {currency} for {symbol}, assuming USD")
+                                        safe_print(f"Unknown currency {currency} for {symbol}, assuming USD")
                                     
                                     # Get exchange rate
                                     eur_rate_ticker = yf.Ticker(conversion_pair)
@@ -307,7 +330,7 @@ class InvestmentTracker:
                                         else:
                                             # For USD (EURUSD=X), divide to convert USD to EUR
                                             price = price_original / exchange_rate
-                                        print(f"Converted {symbol} from {currency} to EUR: {price_original:.2f} -> €{price:.2f}")
+                                        safe_print(f"Converted {symbol} from {currency} to EUR: {price_original:.2f} -> €{price:.2f}")
                                     else:
                                         # Fallback conversion rates if API fails
                                         if currency and currency.upper() == 'USD':
@@ -316,9 +339,9 @@ class InvestmentTracker:
                                             price = price_original * 1.17  # Approximate GBP to EUR
                                         else:
                                             price = price_original * 0.92  # Default USD conversion
-                                        print(f"Using fallback conversion for {symbol}: €{price:.2f}")
+                                        safe_print(f"Using fallback conversion for {symbol}: €{price:.2f}")
                                 except Exception as conv_error:
-                                    print(f"Currency conversion failed for {symbol}: {conv_error}")
+                                    safe_print(f"Currency conversion failed for {symbol}: {conv_error}")
                                     price = price_original  # Use original price if conversion fails
                     
                     # Fallback to ticker info if history doesn't work
@@ -356,7 +379,7 @@ class InvestmentTracker:
                                     price = price_raw
                                 
                 except Exception as e:
-                    print(f"Error fetching stock/ETF price for {symbol}: {e}")
+                    safe_print(f"Error fetching stock/ETF price for {symbol}: {e}")
             
             # Save price to database if we got one
             if price is not None and price > 0:
@@ -379,7 +402,7 @@ class InvestmentTracker:
                 return True
             
         except Exception as e:
-            print(f"Error updating price for {symbol}: {e}")
+            safe_print(f"Error updating price for {symbol}: {e}")
         
         return False
     
@@ -403,7 +426,7 @@ class InvestmentTracker:
             conn.close()
             return True
         except Exception as e:
-            print(f"Error manually updating price for {symbol}: {e}")
+            safe_print(f"Error manually updating price for {symbol}: {e}")
             return False
     
     def get_portfolio_summary(self) -> Dict:
@@ -498,11 +521,162 @@ class InvestmentTracker:
             # Delete transactions first (foreign key constraint)
             cursor.execute("DELETE FROM transactions WHERE asset_symbol = ?", (symbol.upper(),))
             cursor.execute("DELETE FROM price_history WHERE asset_symbol = ?", (symbol.upper(),))
+            cursor.execute("DELETE FROM watchlist WHERE asset_symbol = ?", (symbol.upper(),))
             cursor.execute("DELETE FROM assets WHERE symbol = ?", (symbol.upper(),))
             
             conn.commit()
             conn.close()
             return True
         except Exception as e:
-            print(f"Error deleting asset {symbol}: {e}")
+            safe_print(f"Error deleting asset {symbol}: {e}")
+            return False
+    
+    def add_to_watchlist(self, symbol: str, notes: str = None) -> bool:
+        """Add an asset to the watchlist"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            # Check if asset exists
+            cursor.execute("SELECT symbol FROM assets WHERE symbol = ?", (symbol.upper(),))
+            if not cursor.fetchone():
+                safe_print(f"Asset {symbol} does not exist. Please add the asset first.")
+                conn.close()
+                return False
+            
+            cursor.execute('''
+                INSERT OR REPLACE INTO watchlist (asset_symbol, notes)
+                VALUES (?, ?)
+            ''', (symbol.upper(), notes))
+            
+            conn.commit()
+            conn.close()
+            return True
+        except Exception as e:
+            safe_print(f"Error adding {symbol} to watchlist: {e}")
+            return False
+    
+    def remove_from_watchlist(self, symbol: str) -> bool:
+        """Remove an asset from the watchlist"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            cursor.execute("DELETE FROM watchlist WHERE asset_symbol = ?", (symbol.upper(),))
+            
+            conn.commit()
+            conn.close()
+            return True
+        except Exception as e:
+            safe_print(f"Error removing {symbol} from watchlist: {e}")
+            return False
+    
+    def get_watchlist(self) -> List[Dict]:
+        """Get all assets in the watchlist with current prices"""
+        conn = sqlite3.connect(self.db_path)
+        
+        query = '''
+            SELECT 
+                a.symbol, a.name, a.asset_type, a.platform, a.current_price, a.last_updated,
+                w.added_date, w.notes as watchlist_notes
+            FROM watchlist w
+            JOIN assets a ON w.asset_symbol = a.symbol
+            ORDER BY w.added_date DESC
+        '''
+        df = pd.read_sql_query(query, conn)
+        
+        conn.close()
+        return df.to_dict('records') if not df.empty else []
+    
+    def is_in_watchlist(self, symbol: str) -> bool:
+        """Check if an asset is in the watchlist"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute("SELECT 1 FROM watchlist WHERE asset_symbol = ?", (symbol.upper(),))
+        result = cursor.fetchone() is not None
+        
+        conn.close()
+        return result
+    
+    def search_available_assets(self, query: str, asset_type: str = None) -> List[Dict]:
+        """Search for available assets from APIs based on query"""
+        results = []
+        query_upper = query.upper()
+        query_lower = query.lower()
+        
+        # Search cryptocurrencies
+        if asset_type is None or asset_type == 'crypto':
+            crypto_map = self.get_available_crypto_symbols()
+            for symbol, coin_id in crypto_map.items():
+                if query_upper in symbol or query_lower in coin_id:
+                    results.append({
+                        'symbol': symbol,
+                        'name': coin_id.replace('-', ' ').title(),
+                        'asset_type': 'crypto',
+                        'source': 'coingecko'
+                    })
+        
+        # For stocks/ETFs, we'll use yfinance search
+        if asset_type is None or asset_type in ['stock', 'etf']:
+            try:
+                # Try to get ticker info for the exact query
+                ticker = yf.Ticker(query_upper)
+                info = ticker.info
+                if info and 'shortName' in info:
+                    asset_type_guess = 'etf' if 'ETF' in info.get('shortName', '').upper() else 'stock'
+                    results.append({
+                        'symbol': query_upper,
+                        'name': info.get('shortName', query_upper),
+                        'asset_type': asset_type_guess,
+                        'source': 'yfinance'
+                    })
+            except:
+                pass
+        
+        # Limit results
+        return results[:50]
+    
+    def get_popular_assets(self) -> List[Dict]:
+        """Get a list of popular assets for quick selection"""
+        popular = [
+            # Popular Stocks
+            {'symbol': 'AAPL', 'name': 'Apple Inc.', 'asset_type': 'stock'},
+            {'symbol': 'MSFT', 'name': 'Microsoft Corporation', 'asset_type': 'stock'},
+            {'symbol': 'GOOGL', 'name': 'Alphabet Inc.', 'asset_type': 'stock'},
+            {'symbol': 'AMZN', 'name': 'Amazon.com Inc.', 'asset_type': 'stock'},
+            {'symbol': 'TSLA', 'name': 'Tesla Inc.', 'asset_type': 'stock'},
+            {'symbol': 'NVDA', 'name': 'NVIDIA Corporation', 'asset_type': 'stock'},
+            {'symbol': 'META', 'name': 'Meta Platforms Inc.', 'asset_type': 'stock'},
+            # Popular ETFs
+            {'symbol': 'VWCE.DE', 'name': 'Vanguard FTSE All-World UCITS ETF', 'asset_type': 'etf'},
+            {'symbol': 'SPY', 'name': 'SPDR S&P 500 ETF Trust', 'asset_type': 'etf'},
+            {'symbol': 'QQQ', 'name': 'Invesco QQQ Trust', 'asset_type': 'etf'},
+            {'symbol': 'VTI', 'name': 'Vanguard Total Stock Market ETF', 'asset_type': 'etf'},
+            {'symbol': 'IWDA.AS', 'name': 'iShares Core MSCI World UCITS ETF', 'asset_type': 'etf'},
+            # Popular Cryptos
+            {'symbol': 'BTC', 'name': 'Bitcoin', 'asset_type': 'crypto'},
+            {'symbol': 'ETH', 'name': 'Ethereum', 'asset_type': 'crypto'},
+            {'symbol': 'SOL', 'name': 'Solana', 'asset_type': 'crypto'},
+            {'symbol': 'ADA', 'name': 'Cardano', 'asset_type': 'crypto'},
+            {'symbol': 'DOT', 'name': 'Polkadot', 'asset_type': 'crypto'},
+            {'symbol': 'AVAX', 'name': 'Avalanche', 'asset_type': 'crypto'},
+            {'symbol': 'MATIC', 'name': 'Polygon', 'asset_type': 'crypto'},
+            {'symbol': 'LINK', 'name': 'Chainlink', 'asset_type': 'crypto'},
+        ]
+        return popular
+    
+    def delete_transaction(self, transaction_id: int) -> bool:
+        """Delete a specific transaction by ID"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            cursor.execute("DELETE FROM transactions WHERE id = ?", (transaction_id,))
+            
+            conn.commit()
+            conn.close()
+            return True
+        except Exception as e:
+            safe_print(f"Error deleting transaction {transaction_id}: {e}")
             return False
