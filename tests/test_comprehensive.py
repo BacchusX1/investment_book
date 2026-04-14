@@ -1,346 +1,333 @@
 #!/usr/bin/env python3
 """
-Comprehensive Integration Test Suite for Investment Portfolio Tracker
-
-This script creates a realistic portfolio with diverse assets and demonstrates:
-- Multi-currency asset support with automatic EUR conversion
-- Dynamic cryptocurrency fetching from CoinGecko API
-- Asset type-based API routing
-- Transaction management and portfolio analytics
-- GUI-ready database creation
+Integration tests for the Flask API routes.
+Tests all endpoints with a Flask test client and mocked backend.
 """
 
-import sys
-import os
-import time
 import unittest
-from datetime import datetime, timedelta
+import tempfile
+import os
+import json
+import sys
+from unittest.mock import patch, MagicMock
 
-# Add the src directory to the path
-sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from backend import InvestmentTracker
 
-class TestComprehensivePortfolio(unittest.TestCase):
-    """Test suite for comprehensive portfolio functionality"""
-    
+# We need to set up the Flask app for testing
+import web_frontend
+from web_frontend import app, _set_current_db_name, _validate_db_name, _safe_error
+
+
+def _make_tracker():
+    """Create a tracker with a temp database."""
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.db')
+    tmp.close()
+    with patch.object(InvestmentTracker, 'update_single_asset_price', return_value=True):
+        tracker = InvestmentTracker(tmp.name)
+    return tracker, tmp.name
+
+
+class FlaskTestBase(unittest.TestCase):
+    """Base class for Flask API tests."""
+
     def setUp(self):
-        """Set up test environment"""
-        self.test_db = 'test_comprehensive.db'
-        if os.path.exists(self.test_db):
-            os.remove(self.test_db)
-        self.tracker = InvestmentTracker(self.test_db)
-    
+        self.tracker, self.db_path = _make_tracker()
+        app.config['TESTING'] = True
+        self.client = app.test_client()
+
+        # Point the app at our temp database
+        self.db_name = os.path.basename(self.db_path)
+        # Override PROJECT_ROOT and current db for tests
+        self._orig_root = web_frontend.PROJECT_ROOT
+        web_frontend.PROJECT_ROOT = os.path.dirname(self.db_path)
+        _set_current_db_name(self.db_name)
+
     def tearDown(self):
-        """Clean up test database"""
+        web_frontend.PROJECT_ROOT = self._orig_root
         try:
-            if os.path.exists(self.test_db):
-                os.remove(self.test_db)
-        except:
+            os.unlink(self.db_path)
+        except OSError:
             pass
-    
-    def test_multi_currency_portfolio(self):
-        """Test portfolio with assets from different currencies"""
-        # Add assets from different markets
-        assets = [
-            ("AAPL", "Apple Inc.", "stock"),     # USD
-            ("ASML.AS", "ASML Holding", "stock"), # EUR
-            ("VOD.L", "Vodafone", "stock"),      # GBP
-            ("BTC", "Bitcoin", "crypto"),        # EUR (via CoinGecko)
-        ]
-        
-        for symbol, name, asset_type in assets:
-            result = self.tracker.add_asset(symbol, name, asset_type)
-            self.assertTrue(result, f"Failed to add {symbol}")
-        
-        # Add transactions
-        transactions = [
-            ("AAPL", "buy", 10, 150.0, 5.0, "Test"),
-            ("ASML.AS", "buy", 2, 600.0, 7.5, "Test"),
-            ("BTC", "buy", 0.1, 45000.0, 25.0, "Test"),
-        ]
-        
-        for symbol, t_type, amount, price, fees, platform in transactions:
-            result = self.tracker.add_transaction(symbol, t_type, amount, price, fees, platform)
-            self.assertTrue(result, f"Failed to add transaction for {symbol}")
-        
-        # Check portfolio
-        portfolio = self.tracker.get_portfolio_summary()
-        self.assertGreaterEqual(len(portfolio), 3)
-    
-    def test_asset_type_distribution(self):
-        """Test portfolio with different asset types"""
-        assets = [
-            ("AAPL", "Apple Inc.", "stock"),
-            ("VWCE.DE", "Vanguard All-World ETF", "etf"),
-            ("BTC", "Bitcoin", "crypto"),
-        ]
-        
-        for symbol, name, asset_type in assets:
-            self.tracker.add_asset(symbol, name, asset_type)
-            self.tracker.add_transaction(symbol, "buy", 1.0, 100.0, 1.0)
-        
-        portfolio = self.tracker.get_portfolio_summary()
-        asset_types = {asset['asset_type'] for asset in portfolio}
-        
-        self.assertIn('stock', asset_types)
-        self.assertIn('etf', asset_types)
-        self.assertIn('crypto', asset_types)
 
-def create_demo_portfolio():
-    """Create a comprehensive demonstration portfolio"""
-    
-    # Clean slate
-    demo_db = 'comprehensive_demo.db'
-    if os.path.exists(demo_db):
-        os.remove(demo_db)
-    
-    tracker = InvestmentTracker(demo_db)
-    
-    print("🚀 Investment Portfolio Tracker - Comprehensive Demo")
-    print("=" * 65)
-    print("Creating realistic portfolio with diverse assets...")
-    
-    # Comprehensive asset selection across markets and currencies
-    demo_assets = [
-        # US Tech Stocks (USD → EUR)
-        ('AAPL', 'Apple Inc.', 'stock'),
-        ('MSFT', 'Microsoft Corporation', 'stock'),
-        ('GOOGL', 'Alphabet Inc.', 'stock'),
-        ('NVDA', 'NVIDIA Corporation', 'stock'),
-        
-        # European Stocks (EUR)
-        ('ASML.AS', 'ASML Holding N.V.', 'stock'),
-        ('SAP.DE', 'SAP SE', 'stock'),
-        
-        # UK Stocks (GBP → EUR)
-        ('VOD.L', 'Vodafone Group Plc', 'stock'),
-        ('BP.L', 'BP p.l.c.', 'stock'),
-        
-        # Swiss Stocks (CHF → EUR)
-        ('NESN.SW', 'Nestlé S.A.', 'stock'),
-        
-        # ETFs (Mixed currencies)
-        ('VWCE.DE', 'Vanguard FTSE All-World UCITS ETF', 'etf'),
-        ('SPY', 'SPDR S&P 500 ETF Trust', 'etf'),
-        ('QQQ', 'Invesco QQQ Trust', 'etf'),
-        
-        # Major Cryptocurrencies (EUR via CoinGecko)
-        ('BTC', 'Bitcoin', 'crypto'),
-        ('ETH', 'Ethereum', 'crypto'),
-        ('ADA', 'Cardano', 'crypto'),
-        ('SOL', 'Solana', 'crypto'),
-        ('DOT', 'Polkadot', 'crypto'),
-    ]
-    
-    print(f"\n📊 Adding {len(demo_assets)} Demo Assets...")
-    print("-" * 45)
-    
-    added_count = 0
-    for symbol, name, asset_type in demo_assets:
-        print(f"Adding {symbol:12} ({asset_type:6})...", end=" ")
-        try:
-            success = tracker.add_asset(symbol, name, asset_type)
-            if success:
-                print("✅")
-                added_count += 1
-            else:
-                print("❌")
-            
-            # Rate limiting for crypto APIs
-            if asset_type == 'crypto':
-                time.sleep(1.2)
-                
-        except Exception as e:
-            print(f"❌ ({str(e)[:30]}...)")
-    
-    print(f"\n✅ Successfully added {added_count}/{len(demo_assets)} assets")
-    
-    # Realistic transaction history
-    demo_transactions = [
-        # Initial stock investments
-        ('AAPL', 'buy', 25, 145.50, 9.99, 'Interactive Brokers'),
-        ('MSFT', 'buy', 15, 295.20, 9.99, 'Interactive Brokers'),
-        ('GOOGL', 'buy', 8, 2750.00, 9.99, 'Interactive Brokers'),
-        
-        # European stocks
-        ('ASML.AS', 'buy', 5, 580.30, 7.50, 'DeGiro'),
-        ('SAP.DE', 'buy', 12, 125.40, 5.00, 'DeGiro'),
-        
-        # ETF investments (regular monthly investments)
-        ('VWCE.DE', 'buy', 50, 82.15, 2.50, 'DeGiro'),
-        ('VWCE.DE', 'buy', 55, 84.20, 2.50, 'DeGiro'),
-        ('VWCE.DE', 'buy', 48, 86.75, 2.50, 'DeGiro'),
-        ('SPY', 'buy', 20, 415.60, 9.99, 'Interactive Brokers'),
-        
-        # Crypto investments
-        ('BTC', 'buy', 0.25, 42000.00, 35.00, 'Binance'),
-        ('BTC', 'buy', 0.15, 47500.00, 28.50, 'Binance'),
-        ('ETH', 'buy', 2.5, 2850.00, 22.00, 'Binance'),
-        ('ADA', 'buy', 2500, 0.95, 18.75, 'Binance'),
-        ('SOL', 'buy', 35, 145.20, 15.50, 'Binance'),
-        
-        # Some profit-taking
-        ('AAPL', 'sell', 5, 175.80, 9.99, 'Interactive Brokers'),
-        ('BTC', 'sell', 0.05, 52000.00, 15.60, 'Binance'),
-        
-        # Dividend payments
-        ('AAPL', 'dividend', 20, 0.24, 0.00, 'Interactive Brokers'),
-        ('MSFT', 'dividend', 15, 0.68, 0.00, 'Interactive Brokers'),
-        ('VWCE.DE', 'dividend', 153, 0.47, 0.00, 'DeGiro'),
-        ('SAP.DE', 'dividend', 12, 1.85, 0.00, 'DeGiro'),
-    ]
-    
-    print(f"\n💰 Adding {len(demo_transactions)} Demo Transactions...")
-    print("-" * 50)
-    
-    transaction_count = 0
-    for asset, tx_type, amount, price, fees, platform in demo_transactions:
-        print(f"{tx_type:8} {amount:8.2f} {asset:12} @ €{price:8.2f}...", end=" ")
-        try:
-            success = tracker.add_transaction(asset, tx_type, amount, price, fees, platform)
-            if success:
-                print("✅")
-                transaction_count += 1
-            else:
-                print("❌")
-        except Exception as e:
-            print(f"❌ ({str(e)[:20]}...)")
-    
-    print(f"\n✅ Successfully added {transaction_count}/{len(demo_transactions)} transactions")
-    
-    return tracker, demo_db
+    def _add_asset(self, symbol='AAPL', name='Apple Inc.', asset_type='stock'):
+        return self.client.post('/api/assets', json={
+            'symbol': symbol, 'name': name, 'asset_type': asset_type
+        })
 
-def display_comprehensive_analytics(tracker):
-    """Display detailed portfolio analytics"""
-    
-    print("\n📈 Comprehensive Portfolio Analytics")
-    print("=" * 65)
-    
-    # Update prices first
-    print("\n🔄 Updating current market prices...")
-    try:
-        results = tracker.update_prices()
-        success_count = sum(1 for success in results.values() if success)
-        total_count = len(results)
-        print(f"✅ Updated {success_count}/{total_count} asset prices")
-    except Exception as e:
-        print(f"⚠️  Price update limited due to: {str(e)[:50]}...")
-    
-    # Portfolio Summary
-    portfolio = tracker.get_portfolio_summary()
-    if not portfolio:
-        print("❌ No portfolio data available")
-        return
-    
-    print(f"\n💼 Portfolio Holdings ({len(portfolio)} assets):")
-    print("-" * 90)
-    print(f"{'Asset':<12} {'Type':<8} {'Amount':<12} {'Price':<12} {'Value':<12} {'Invested':<12} {'P&L':<20}")
-    print("-" * 90)
-    
-    total_value = 0
-    total_invested = 0
-    type_totals = {}
-    
-    for asset in portfolio:
-        total_value += asset['current_value']
-        total_invested += asset['total_invested']
-        
-        # Track by asset type
-        asset_type = asset['asset_type']
-        if asset_type not in type_totals:
-            type_totals[asset_type] = {'value': 0, 'invested': 0, 'count': 0}
-        type_totals[asset_type]['value'] += asset['current_value']
-        type_totals[asset_type]['invested'] += asset['total_invested']
-        type_totals[asset_type]['count'] += 1
-        
-        # Format P&L with color indicators
-        pnl = asset['profit_loss']
-        pnl_pct = asset['profit_loss_percent']
-        pnl_indicator = "🟢" if pnl > 0 else "🔴" if pnl < 0 else "⚪"
-        pnl_text = f"{pnl_indicator} €{pnl:+.2f} ({pnl_pct:+.1f}%)"
-        
-        print(f"{asset['symbol']:<12} {asset_type:<8} {asset['total_amount']:<12.4f} "
-              f"€{asset['current_price']:<11.2f} €{asset['current_value']:<11.2f} "
-              f"€{asset['total_invested']:<11.2f} {pnl_text:<20}")
-    
-    print("-" * 90)
-    total_pnl = total_value - total_invested
-    total_pnl_pct = (total_pnl / total_invested * 100) if total_invested > 0 else 0
-    total_indicator = "🟢" if total_pnl > 0 else "🔴" if total_pnl < 0 else "⚪"
-    
-    print(f"{'TOTAL':<12} {'':<8} {'':<12} {'':<12} €{total_value:<11.2f} "
-          f"€{total_invested:<11.2f} {total_indicator} €{total_pnl:+.2f} ({total_pnl_pct:+.1f}%)")
-    
-    # Asset Type Breakdown
-    print(f"\n📊 Asset Allocation by Type:")
-    print("-" * 55)
-    print(f"{'Type':<12} {'Value':<12} {'Invested':<12} {'Count':<8} {'Weight':<10}")
-    print("-" * 55)
-    
-    for asset_type, data in sorted(type_totals.items()):
-        weight_pct = (data['value'] / total_value * 100) if total_value > 0 else 0
-        type_pnl = data['value'] - data['invested']
-        type_indicator = "🟢" if type_pnl > 0 else "🔴" if type_pnl < 0 else "⚪"
-        
-        print(f"{asset_type.capitalize():<12} €{data['value']:<11.2f} "
-              f"€{data['invested']:<11.2f} {data['count']:<8} {weight_pct:>6.1f}% {type_indicator}")
-    
-    # Recent Transactions
-    transactions = tracker.get_transactions()
-    if transactions:
-        print(f"\n📋 Recent Transactions (Last 10):")
-        print("-" * 75)
-        print(f"{'Date':<12} {'Asset':<10} {'Type':<8} {'Amount':<12} {'Price':<12} {'Platform':<15}")
-        print("-" * 75)
-        
-        for tx in transactions[:10]:
-            date_str = tx['transaction_date'][:10] if tx['transaction_date'] else "Unknown"
-            print(f"{date_str:<12} {tx['asset_symbol']:<10} {tx['transaction_type']:<8} "
-                  f"{tx['amount']:<12.4f} €{tx['price_per_unit']:<11.2f} "
-                  f"{tx.get('platform', 'N/A'):<15}")
-    
-    # Summary Statistics
-    print(f"\n💡 Portfolio Summary:")
-    print(f"   📈 Total Value: €{total_value:,.2f}")
-    print(f"   💰 Total Invested: €{total_invested:,.2f}")
-    print(f"   🎯 Total P&L: €{total_pnl:+,.2f} ({total_pnl_pct:+.1f}%)")
-    print(f"   📊 Asset Types: {len(type_totals)}")
-    print(f"   🏢 Total Assets: {len(portfolio)}")
-    print(f"   📝 Total Transactions: {len(transactions)}")
+    def _add_transaction(self, symbol='AAPL', tx_type='buy', amount=10, price=150.0, fees=5.0):
+        return self.client.post('/api/transactions', json={
+            'asset_symbol': symbol, 'transaction_type': tx_type,
+            'amount': amount, 'price_per_unit': price, 'fees': fees
+        })
 
-def main():
-    """Main demonstration function"""
-    
-    if len(sys.argv) > 1 and sys.argv[1] == "--unittest":
-        # Run unit tests
-        unittest.main(argv=[''])
-        return
-    
-    print("🎯 Creating comprehensive demonstration portfolio...")
-    
-    try:
-        tracker, demo_db = create_demo_portfolio()
-        display_comprehensive_analytics(tracker)
-        
-        print(f"\n🎉 Comprehensive demo completed successfully!")
-        print(f"📁 Database saved as: {demo_db}")
-        print(f"🚀 Ready for GUI testing:")
-        print(f"   python example/gui/gui.py")
-        print(f"   (Select '{demo_db}' when prompted)")
-        print(f"\n✨ This portfolio demonstrates:")
-        print(f"   • Multi-currency support (USD, EUR, GBP, CHF)")
-        print(f"   • Real-time price updates")
-        print(f"   • Diverse asset types (stocks, ETFs, crypto)")
-        print(f"   • Realistic transaction history")
-        print(f"   • Comprehensive analytics")
-        
-    except KeyboardInterrupt:
-        print("\n\n👋 Demo cancelled by user")
-    except Exception as e:
-        print(f"\n❌ Demo failed: {e}")
-        import traceback
-        traceback.print_exc()
 
-if __name__ == "__main__":
-    main()
+class TestIndexRoute(FlaskTestBase):
+    def test_index_returns_html(self):
+        resp = self.client.get('/')
+        self.assertEqual(resp.status_code, 200)
+
+
+class TestAssetEndpoints(FlaskTestBase):
+    @patch.object(InvestmentTracker, 'update_single_asset_price', return_value=True)
+    def test_add_asset(self, mock_price):
+        resp = self._add_asset()
+        data = resp.get_json()
+        self.assertTrue(data['success'])
+
+    @patch.object(InvestmentTracker, 'update_single_asset_price', return_value=True)
+    def test_get_assets(self, mock_price):
+        self._add_asset()
+        resp = self.client.get('/api/assets')
+        data = resp.get_json()
+        self.assertTrue(data['success'])
+        self.assertEqual(len(data['data']), 1)
+        self.assertEqual(data['data'][0]['symbol'], 'AAPL')
+
+    def test_add_asset_missing_fields(self):
+        resp = self.client.post('/api/assets', json={'symbol': 'AAPL'})
+        data = resp.get_json()
+        self.assertFalse(data['success'])
+        self.assertEqual(resp.status_code, 400)
+
+    def test_add_asset_no_body(self):
+        resp = self.client.post('/api/assets', content_type='application/json', data='')
+        self.assertIn(resp.status_code, (400, 415))
+
+    @patch.object(InvestmentTracker, 'update_single_asset_price', return_value=True)
+    def test_delete_asset(self, mock_price):
+        self._add_asset()
+        resp = self.client.delete('/api/assets/AAPL')
+        self.assertTrue(resp.get_json()['success'])
+        resp = self.client.get('/api/assets')
+        self.assertEqual(len(resp.get_json()['data']), 0)
+
+    @patch.object(InvestmentTracker, 'update_single_asset_price', return_value=True)
+    def test_update_asset_price(self, mock_price):
+        self._add_asset()
+        resp = self.client.put('/api/assets/AAPL/price', json={'price': 175.0})
+        self.assertTrue(resp.get_json()['success'])
+
+    def test_update_asset_price_invalid(self):
+        resp = self.client.put('/api/assets/AAPL/price', json={'price': -10})
+        data = resp.get_json()
+        self.assertFalse(data['success'])
+        self.assertEqual(resp.status_code, 400)
+
+    def test_update_asset_price_no_body(self):
+        resp = self.client.put('/api/assets/AAPL/price', content_type='application/json', data='')
+        self.assertIn(resp.status_code, (400, 415))
+
+
+class TestTransactionEndpoints(FlaskTestBase):
+    @patch.object(InvestmentTracker, 'update_single_asset_price', return_value=True)
+    def test_add_and_get_transactions(self, mock_price):
+        self._add_asset()
+        resp = self._add_transaction()
+        self.assertTrue(resp.get_json()['success'])
+
+        resp = self.client.get('/api/transactions')
+        data = resp.get_json()
+        self.assertTrue(data['success'])
+        self.assertEqual(len(data['data']), 1)
+
+    def test_add_transaction_missing_fields(self):
+        resp = self.client.post('/api/transactions', json={'asset_symbol': 'AAPL'})
+        self.assertFalse(resp.get_json()['success'])
+        self.assertEqual(resp.status_code, 400)
+
+    @patch.object(InvestmentTracker, 'update_single_asset_price', return_value=True)
+    def test_delete_transaction(self, mock_price):
+        self._add_asset()
+        self._add_transaction()
+        txns = self.client.get('/api/transactions').get_json()['data']
+        resp = self.client.delete(f"/api/transactions/{txns[0]['id']}")
+        self.assertTrue(resp.get_json()['success'])
+
+    @patch.object(InvestmentTracker, 'update_single_asset_price', return_value=True)
+    def test_get_transactions_by_symbol(self, mock_price):
+        self._add_asset()
+        self._add_asset('BTC', 'Bitcoin', 'crypto')
+        self._add_transaction('AAPL')
+        self._add_transaction('BTC', 'buy', 0.1, 50000.0)
+        resp = self.client.get('/api/transactions?symbol=AAPL')
+        data = resp.get_json()
+        self.assertEqual(len(data['data']), 1)
+        self.assertEqual(data['data'][0]['asset_symbol'], 'AAPL')
+
+
+class TestPortfolioEndpoint(FlaskTestBase):
+    def test_empty_portfolio(self):
+        resp = self.client.get('/api/portfolio')
+        data = resp.get_json()
+        self.assertTrue(data['success'])
+        self.assertEqual(data['data'], [])
+
+    @patch.object(InvestmentTracker, 'update_single_asset_price', return_value=True)
+    def test_portfolio_with_data(self, mock_price):
+        self._add_asset()
+        self._add_transaction()
+        resp = self.client.get('/api/portfolio')
+        data = resp.get_json()
+        self.assertTrue(data['success'])
+        self.assertEqual(len(data['data']), 1)
+
+
+class TestWatchlistEndpoints(FlaskTestBase):
+    @patch.object(InvestmentTracker, 'update_single_asset_price', return_value=True)
+    def test_watchlist_crud(self, mock_price):
+        self._add_asset()
+
+        # Add to watchlist
+        resp = self.client.post('/api/watchlist', json={'symbol': 'AAPL'})
+        self.assertTrue(resp.get_json()['success'])
+
+        # Get watchlist
+        resp = self.client.get('/api/watchlist')
+        data = resp.get_json()
+        self.assertEqual(len(data['data']), 1)
+
+        # Remove from watchlist
+        resp = self.client.delete('/api/watchlist/AAPL')
+        self.assertTrue(resp.get_json()['success'])
+
+        resp = self.client.get('/api/watchlist')
+        self.assertEqual(len(resp.get_json()['data']), 0)
+
+    def test_watchlist_no_body(self):
+        resp = self.client.post('/api/watchlist', content_type='application/json', data='')
+        self.assertIn(resp.status_code, (400, 415))
+
+
+class TestPriceRefreshEndpoints(FlaskTestBase):
+    @patch.object(InvestmentTracker, 'update_asset_prices', return_value={'AAPL': True})
+    @patch.object(InvestmentTracker, 'update_single_asset_price', return_value=True)
+    def test_refresh_all_prices(self, mock_single, mock_all):
+        self._add_asset()
+        resp = self.client.post('/api/prices/refresh')
+        data = resp.get_json()
+        self.assertTrue(data['success'])
+        self.assertEqual(data['updated'], 1)
+
+    @patch.object(InvestmentTracker, 'update_single_asset_price', return_value=True)
+    def test_refresh_single_price(self, mock_price):
+        self._add_asset()
+        resp = self.client.post('/api/prices/refresh/AAPL')
+        self.assertTrue(resp.get_json()['success'])
+
+    @patch.object(InvestmentTracker, 'update_single_asset_price', return_value=True)
+    def test_refresh_nonexistent_asset(self, mock_price):
+        resp = self.client.post('/api/prices/refresh/NOPE')
+        data = resp.get_json()
+        self.assertFalse(data['success'])
+        self.assertEqual(resp.status_code, 404)
+
+
+class TestSearchEndpoints(FlaskTestBase):
+    def test_popular_assets(self):
+        resp = self.client.get('/api/popular-assets')
+        data = resp.get_json()
+        self.assertTrue(data['success'])
+        self.assertGreater(len(data['data']), 0)
+
+    def test_search_empty_query(self):
+        resp = self.client.get('/api/search/assets?q=')
+        data = resp.get_json()
+        self.assertTrue(data['success'])
+
+    @patch.object(InvestmentTracker, 'get_available_crypto_symbols',
+                  return_value={'BTC': 'bitcoin'})
+    def test_crypto_symbols(self, mock_crypto):
+        resp = self.client.get('/api/crypto-symbols')
+        data = resp.get_json()
+        self.assertTrue(data['success'])
+
+
+class TestPriceHistoryEndpoint(FlaskTestBase):
+    def test_price_history_empty(self):
+        resp = self.client.get('/api/price-history')
+        data = resp.get_json()
+        self.assertTrue(data['success'])
+        self.assertEqual(data['data'], [])
+
+
+class TestDatabaseEndpoints(FlaskTestBase):
+    def test_list_databases(self):
+        resp = self.client.get('/api/databases')
+        data = resp.get_json()
+        self.assertTrue(data['success'])
+        self.assertIsInstance(data['data'], list)
+
+    def test_get_current_database(self):
+        resp = self.client.get('/api/databases/current')
+        data = resp.get_json()
+        self.assertTrue(data['success'])
+
+    def test_create_database(self):
+        resp = self.client.post('/api/databases/create', json={'name': 'test_new'})
+        data = resp.get_json()
+        self.assertTrue(data['success'])
+        # Cleanup
+        new_db = os.path.join(os.path.dirname(self.db_path), 'test_new.db')
+        if os.path.exists(new_db):
+            os.unlink(new_db)
+
+    def test_create_database_no_name(self):
+        resp = self.client.post('/api/databases/create', json={'name': ''})
+        self.assertFalse(resp.get_json()['success'])
+
+    def test_load_database_not_found(self):
+        resp = self.client.post('/api/databases/load', json={'database': 'nonexistent.db'})
+        data = resp.get_json()
+        self.assertFalse(data['success'])
+
+
+class TestDbNameValidation(unittest.TestCase):
+    def test_valid_names(self):
+        self.assertEqual(_validate_db_name('my_portfolio.db'), 'my_portfolio.db')
+        self.assertEqual(_validate_db_name('test-db.db'), 'test-db.db')
+
+    def test_path_traversal_blocked(self):
+        with self.assertRaises(ValueError):
+            _validate_db_name('../etc/passwd.db')
+        with self.assertRaises(ValueError):
+            _validate_db_name('../../secrets.db')
+
+    def test_deep_path_blocked(self):
+        with self.assertRaises(ValueError):
+            _validate_db_name('a/b/c.db')
+
+    def test_non_data_prefix_blocked(self):
+        with self.assertRaises(ValueError):
+            _validate_db_name('other/test.db')
+
+    def test_data_prefix_allowed(self):
+        self.assertEqual(_validate_db_name('data/test.db'), 'data/test.db')
+
+    def test_empty_name_rejected(self):
+        with self.assertRaises(ValueError):
+            _validate_db_name('')
+        with self.assertRaises(ValueError):
+            _validate_db_name(None)
+
+    def test_bad_extension_rejected(self):
+        with self.assertRaises(ValueError):
+            _validate_db_name('test.txt')
+
+
+class TestSafeError(unittest.TestCase):
+    def test_normal_message(self):
+        self.assertEqual(_safe_error(Exception('Something failed')), 'Something failed')
+
+    def test_filters_paths(self):
+        self.assertEqual(_safe_error(Exception('/home/user/secret.py failed')), 'An internal error occurred')
+
+    def test_truncates_long_message(self):
+        msg = 'x' * 300
+        result = _safe_error(Exception(msg))
+        self.assertEqual(len(result), 200)
+
+
+if __name__ == '__main__':
+    unittest.main()

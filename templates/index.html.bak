@@ -1,0 +1,2469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Investment Portfolio Tracker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --bg-card: #1e293b;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-primary: #3b82f6;
+            --accent-secondary: #8b5cf6;
+            --accent-gradient: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            --success: #22c55e;
+            --success-bg: rgba(34, 197, 94, 0.1);
+            --danger: #ef4444;
+            --danger-bg: rgba(239, 68, 68, 0.1);
+            --warning: #f59e0b;
+            --warning-bg: rgba(245, 158, 11, 0.1);
+            --border-color: #334155;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.3);
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 16px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        /* Layout */
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+            z-index: 100;
+        }
+
+        .logo {
+            padding: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .logo-icon {
+            width: 42px;
+            height: 42px;
+            background: var(--accent-gradient);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .logo-text {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .nav-menu {
+            padding: 16px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: all 0.2s ease;
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+
+        .nav-item:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .nav-item.active {
+            background: var(--accent-gradient);
+            color: white;
+            box-shadow: var(--shadow-md);
+        }
+
+        .nav-item i {
+            width: 20px;
+            text-align: center;
+        }
+
+        /* Database Selector */
+        .db-selector {
+            padding: 16px;
+            border-top: 1px solid var(--border-color);
+            margin-top: auto;
+        }
+
+        .db-selector-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .db-selector-label i {
+            font-size: 12px;
+        }
+
+        .db-dropdown {
+            width: calc(100% - 40px);
+            padding: 10px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .db-dropdown:hover {
+            border-color: var(--accent-primary);
+        }
+
+        .db-dropdown:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+
+        .db-dropdown option {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        .db-selector .btn-icon {
+            width: 36px;
+            height: 36px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            vertical-align: top;
+            margin-left: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .db-selector .btn-icon:hover {
+            background: var(--accent-primary);
+            border-color: var(--accent-primary);
+            color: white;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 24px 32px;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
+        .page-title {
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .page-title span {
+            color: var(--text-muted);
+            font-weight: 400;
+            font-size: 16px;
+            margin-left: 12px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--accent-gradient);
+            color: white;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--text-muted);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-sm {
+            padding: 8px 14px;
+            font-size: 13px;
+        }
+
+        .btn-icon {
+            padding: 10px;
+            width: 40px;
+            height: 40px;
+            justify-content: center;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-title i {
+            color: var(--accent-primary);
+        }
+
+        .card-body {
+            padding: 24px;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-color);
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--accent-gradient);
+        }
+
+        .stat-card.profit::before {
+            background: var(--success);
+        }
+
+        .stat-card.loss::before {
+            background: var(--danger);
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            margin-bottom: 16px;
+        }
+
+        .stat-icon.blue {
+            background: rgba(59, 130, 246, 0.15);
+            color: var(--accent-primary);
+        }
+
+        .stat-icon.purple {
+            background: rgba(139, 92, 246, 0.15);
+            color: var(--accent-secondary);
+        }
+
+        .stat-icon.green {
+            background: var(--success-bg);
+            color: var(--success);
+        }
+
+        .stat-icon.red {
+            background: var(--danger-bg);
+            color: var(--danger);
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .stat-change {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+
+        .stat-change.positive {
+            color: var(--success);
+        }
+
+        .stat-change.negative {
+            color: var(--danger);
+        }
+
+        /* Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        @media (max-width: 1200px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Charts */
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+
+        /* Tables */
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            padding: 14px 16px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        td {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 14px;
+        }
+
+        tr:hover {
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .asset-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .asset-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .asset-icon.crypto {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+        }
+
+        .asset-icon.stock {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+        }
+
+        .asset-icon.etf {
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            color: white;
+        }
+
+        .asset-icon.bond {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            color: white;
+        }
+
+        .asset-icon.commodity {
+            background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+            color: white;
+        }
+
+        .asset-name {
+            font-weight: 600;
+        }
+
+        .asset-symbol {
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-crypto { background: var(--warning-bg); color: var(--warning); }
+        .badge-stock { background: rgba(59, 130, 246, 0.15); color: var(--accent-primary); }
+        .badge-etf { background: var(--success-bg); color: var(--success); }
+        .badge-bond { background: rgba(139, 92, 246, 0.15); color: var(--accent-secondary); }
+        .badge-commodity { background: rgba(236, 72, 153, 0.15); color: #ec4899; }
+
+        .badge-buy { background: var(--success-bg); color: var(--success); }
+        .badge-sell { background: var(--danger-bg); color: var(--danger); }
+        .badge-dividend { background: rgba(59, 130, 246, 0.15); color: var(--accent-primary); }
+        .badge-fee { background: rgba(139, 92, 246, 0.15); color: var(--accent-secondary); }
+
+        .positive { color: var(--success); }
+        .negative { color: var(--danger); }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-color);
+            width: 100%;
+            max-width: 560px;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.active .modal {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            padding: 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .modal-close {
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius-sm);
+            background: var(--bg-tertiary);
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .modal-close:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+
+        .form-control::placeholder {
+            color: var(--text-muted);
+        }
+
+        select.form-control {
+            cursor: pointer;
+        }
+
+        .form-hint {
+            display: block;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        /* Search Select (Custom Searchable Dropdown) */
+        .search-select {
+            position: relative;
+        }
+
+        .search-select-input {
+            position: relative;
+        }
+
+        .search-select-input input {
+            padding-right: 40px;
+        }
+
+        .search-select-input i {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            pointer-events: none;
+        }
+
+        .search-select-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            max-height: 280px;
+            overflow-y: auto;
+            z-index: 100;
+            margin-top: 4px;
+            display: none;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .search-select-dropdown.active {
+            display: block;
+        }
+
+        .search-select-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: background 0.2s ease;
+        }
+
+        .search-select-item:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .search-select-item.selected {
+            background: rgba(59, 130, 246, 0.15);
+        }
+
+        .search-select-category {
+            padding: 8px 16px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: var(--bg-tertiary);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .search-select-category:first-child {
+            border-top: none;
+        }
+
+        .search-select-empty {
+            padding: 24px;
+            text-align: center;
+            color: var(--text-muted);
+        }
+
+        /* Action buttons in tables */
+        .action-btns {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            font-size: 14px;
+        }
+
+        .action-btn-edit {
+            background: rgba(59, 130, 246, 0.15);
+            color: var(--accent-primary);
+        }
+
+        .action-btn-edit:hover {
+            background: var(--accent-primary);
+            color: white;
+        }
+
+        .action-btn-delete {
+            background: var(--danger-bg);
+            color: var(--danger);
+        }
+
+        .action-btn-delete:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        .action-btn-watch {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--warning);
+        }
+
+        .action-btn-watch:hover {
+            background: var(--warning);
+            color: white;
+        }
+
+        .action-btn-watch.active {
+            background: var(--warning);
+            color: white;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            background: var(--bg-tertiary);
+            padding: 4px;
+            border-radius: var(--radius-md);
+            width: fit-content;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+            color: var(--text-secondary);
+            transition: all 0.2s ease;
+            border: none;
+            background: transparent;
+        }
+
+        .tab:hover {
+            color: var(--text-primary);
+        }
+
+        .tab.active {
+            background: var(--accent-gradient);
+            color: white;
+        }
+
+        /* Page Sections */
+        .page-section {
+            display: none;
+        }
+
+        .page-section.active {
+            display: block;
+        }
+
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .toast {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: var(--shadow-lg);
+            animation: slideIn 0.3s ease;
+            min-width: 300px;
+        }
+
+        .toast.success {
+            border-left: 4px solid var(--success);
+        }
+
+        .toast.error {
+            border-left: 4px solid var(--danger);
+        }
+
+        .toast.info {
+            border-left: 4px solid var(--accent-primary);
+        }
+
+        .toast-icon {
+            font-size: 20px;
+        }
+
+        .toast.success .toast-icon { color: var(--success); }
+        .toast.error .toast-icon { color: var(--danger); }
+        .toast.info .toast-icon { color: var(--accent-primary); }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--bg-tertiary);
+            border-top-color: var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 24px;
+            color: var(--text-muted);
+        }
+
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            font-size: 18px;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 72px;
+            }
+            .logo-text, .nav-item span {
+                display: none;
+            }
+            .logo {
+                justify-content: center;
+                padding: 16px;
+            }
+            .nav-item {
+                justify-content: center;
+                padding: 14px;
+            }
+            .main-content {
+                margin-left: 72px;
+            }
+            .db-selector {
+                padding: 12px 8px;
+            }
+            .db-selector-label span {
+                display: none;
+            }
+            .db-dropdown {
+                width: 100%;
+                padding: 8px;
+                font-size: 0;
+            }
+            .db-selector .btn-icon {
+                display: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+            .main-content {
+                margin-left: 0;
+                padding: 16px;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Section Header */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        /* Quick Actions Bar */
+        .quick-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="logo">
+                <div class="logo-icon">💰</div>
+                <div class="logo-text">Portfolio</div>
+            </div>
+            <nav class="nav-menu">
+                <div class="nav-item active" data-page="dashboard">
+                    <i class="fas fa-chart-pie"></i>
+                    <span>Dashboard</span>
+                </div>
+                <div class="nav-item" data-page="assets">
+                    <i class="fas fa-coins"></i>
+                    <span>Assets & Transactions</span>
+                </div>
+                <div class="nav-item" data-page="watchlist">
+                    <i class="fas fa-eye"></i>
+                    <span>Watchlist</span>
+                </div>
+            </nav>
+            
+            <!-- Database Selector -->
+            <div class="db-selector">
+                <div class="db-selector-label">
+                    <i class="fas fa-database"></i>
+                    <span>Database</span>
+                </div>
+                <select id="database-select" class="db-dropdown" onchange="switchDatabase(this.value)">
+                    <!-- Populated dynamically -->
+                </select>
+                <button class="btn-icon" onclick="openCreateDbModal()" title="Create new database">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Dashboard Page -->
+            <section id="page-dashboard" class="page-section active">
+                <div class="page-header">
+                    <h1 class="page-title">Dashboard <span id="last-updated"></span></h1>
+                    <div class="header-actions">
+                        <button class="btn btn-secondary" onclick="refreshPrices()">
+                            <i class="fas fa-sync-alt"></i> Refresh Prices
+                        </button>
+                        <button class="btn btn-primary" onclick="openAddAssetModal()">
+                            <i class="fas fa-plus"></i> Add Asset
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card" id="stat-total-value">
+                        <div class="stat-icon blue">
+                            <i class="fas fa-wallet"></i>
+                        </div>
+                        <div class="stat-label">Total Portfolio Value</div>
+                        <div class="stat-value">€0.00</div>
+                    </div>
+                    <div class="stat-card" id="stat-invested">
+                        <div class="stat-icon purple">
+                            <i class="fas fa-hand-holding-usd"></i>
+                        </div>
+                        <div class="stat-label">Total Invested</div>
+                        <div class="stat-value">€0.00</div>
+                    </div>
+                    <div class="stat-card" id="stat-pnl">
+                        <div class="stat-icon green">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="stat-label">Total Profit/Loss</div>
+                        <div class="stat-value">€0.00</div>
+                        <div class="stat-change positive">
+                            <i class="fas fa-arrow-up"></i>
+                            <span>0.00%</span>
+                        </div>
+                    </div>
+                    <div class="stat-card" id="stat-assets">
+                        <div class="stat-icon blue">
+                            <i class="fas fa-layer-group"></i>
+                        </div>
+                        <div class="stat-label">Total Assets</div>
+                        <div class="stat-value">0</div>
+                    </div>
+                </div>
+
+                <!-- Charts Row -->
+                <div class="dashboard-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fas fa-chart-pie"></i>
+                                Portfolio Allocation
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="allocation-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fas fa-chart-bar"></i>
+                                Asset Performance
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="performance-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Portfolio Holdings -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fas fa-briefcase"></i>
+                            Portfolio Holdings
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table id="portfolio-table">
+                                <thead>
+                                    <tr>
+                                        <th>Asset</th>
+                                        <th>Type</th>
+                                        <th>Amount</th>
+                                        <th>Price</th>
+                                        <th>Value</th>
+                                        <th>Invested</th>
+                                        <th>P&L</th>
+                                        <th>Change</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Assets & Transactions Page -->
+            <section id="page-assets" class="page-section">
+                <div class="page-header">
+                    <h1 class="page-title">Assets & Transactions</h1>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" onclick="openAddAssetModal()">
+                            <i class="fas fa-plus"></i> Add Asset
+                        </button>
+                        <button class="btn btn-success" onclick="openAddTransactionModal()">
+                            <i class="fas fa-exchange-alt"></i> Add Transaction
+                        </button>
+                    </div>
+                </div>
+
+                <!-- All Assets -->
+                <div class="card" style="margin-bottom: 24px;">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fas fa-coins"></i>
+                            All Assets
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table id="assets-table">
+                                <thead>
+                                    <tr>
+                                        <th>Asset</th>
+                                        <th>Type</th>
+                                        <th>Platform</th>
+                                        <th>Current Price</th>
+                                        <th>Last Updated</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Transactions -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fas fa-history"></i>
+                            Recent Transactions
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table id="transactions-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Asset</th>
+                                        <th>Type</th>
+                                        <th>Amount</th>
+                                        <th>Price</th>
+                                        <th>Total</th>
+                                        <th>Fees</th>
+                                        <th>Platform</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Watchlist Page -->
+            <section id="page-watchlist" class="page-section">
+                <div class="page-header">
+                    <h1 class="page-title">Watchlist</h1>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" onclick="openAddAssetModal(true)">
+                            <i class="fas fa-plus"></i> Add to Watchlist
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fas fa-eye"></i>
+                            Watched Assets
+                        </div>
+                        <button class="btn btn-sm btn-secondary" onclick="refreshPrices()">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table id="watchlist-table">
+                                <thead>
+                                    <tr>
+                                        <th>Asset</th>
+                                        <th>Type</th>
+                                        <th>Current Price</th>
+                                        <th>Last Updated</th>
+                                        <th>Notes</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Add Asset Modal -->
+    <div class="modal-overlay" id="add-asset-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Add New Asset</h2>
+                <button class="modal-close" onclick="closeModal('add-asset-modal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="add-asset-form">
+                    <div class="form-group">
+                        <label class="form-label">Search Asset</label>
+                        <div class="search-select" id="asset-search-select">
+                            <div class="search-select-input">
+                                <input type="text" class="form-control" id="asset-search" 
+                                       placeholder="Search stocks, ETFs, crypto..." autocomplete="off">
+                                <i class="fas fa-search"></i>
+                            </div>
+                            <div class="search-select-dropdown" id="asset-search-dropdown"></div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Symbol</label>
+                            <input type="text" class="form-control" id="asset-symbol" 
+                                   placeholder="e.g., AAPL, BTC" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Name</label>
+                            <input type="text" class="form-control" id="asset-name" 
+                                   placeholder="e.g., Apple Inc." required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Type</label>
+                            <select class="form-control" id="asset-type" required>
+                                <option value="stock">Stock</option>
+                                <option value="etf">ETF</option>
+                                <option value="crypto">Cryptocurrency</option>
+                                <option value="bond">Bond</option>
+                                <option value="commodity">Commodity</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Platform (Optional)</label>
+                            <input type="text" class="form-control" id="asset-platform" 
+                                   placeholder="e.g., Interactive Brokers">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <input type="checkbox" id="add-to-watchlist" style="margin-right: 8px;">
+                            Add to watchlist only (no transactions)
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('add-asset-modal')">Cancel</button>
+                <button class="btn btn-primary" onclick="submitAddAsset()">
+                    <i class="fas fa-plus"></i> Add Asset
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Transaction Modal -->
+    <div class="modal-overlay" id="add-transaction-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Add Transaction</h2>
+                <button class="modal-close" onclick="closeModal('add-transaction-modal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="add-transaction-form">
+                    <div class="form-group">
+                        <label class="form-label">Asset</label>
+                        <select class="form-control" id="transaction-asset" required>
+                            <option value="">Select an asset...</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Transaction Type</label>
+                            <select class="form-control" id="transaction-type" required>
+                                <option value="buy">Buy</option>
+                                <option value="sell">Sell</option>
+                                <option value="dividend">Dividend</option>
+                                <option value="fee">Fee</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Date</label>
+                            <input type="date" class="form-control" id="transaction-date" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Amount</label>
+                            <input type="number" class="form-control" id="transaction-amount" 
+                                   step="0.00000001" min="0" placeholder="0.00" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Price per Unit (€)</label>
+                            <input type="number" class="form-control" id="transaction-price" 
+                                   step="0.01" min="0" placeholder="0.00" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Fees (€)</label>
+                            <input type="number" class="form-control" id="transaction-fees" 
+                                   step="0.01" min="0" placeholder="0.00" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Platform</label>
+                            <input type="text" class="form-control" id="transaction-platform" 
+                                   placeholder="e.g., Binance">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Notes (Optional)</label>
+                        <textarea class="form-control" id="transaction-notes" rows="2" 
+                                  placeholder="Any additional notes..."></textarea>
+                    </div>
+                    <div class="form-group" style="background: var(--bg-tertiary); padding: 16px; border-radius: var(--radius-md);">
+                        <div style="display: flex; justify-content: space-between; font-size: 14px;">
+                            <span>Total Value:</span>
+                            <strong id="transaction-total">€0.00</strong>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('add-transaction-modal')">Cancel</button>
+                <button class="btn btn-success" onclick="submitAddTransaction()">
+                    <i class="fas fa-check"></i> Add Transaction
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Update Price Modal -->
+    <div class="modal-overlay" id="update-price-modal">
+        <div class="modal" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2 class="modal-title">Update Price</h2>
+                <button class="modal-close" onclick="closeModal('update-price-modal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="update-price-form">
+                    <input type="hidden" id="update-price-symbol">
+                    <div class="form-group">
+                        <label class="form-label">Asset: <strong id="update-price-asset-name"></strong></label>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">New Price (€)</label>
+                        <input type="number" class="form-control" id="update-price-value" 
+                               step="0.01" min="0" placeholder="0.00" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('update-price-modal')">Cancel</button>
+                <button class="btn btn-primary" onclick="submitUpdatePrice()">
+                    <i class="fas fa-save"></i> Update
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Database Modal -->
+    <div class="modal-overlay" id="create-db-modal">
+        <div class="modal" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2 class="modal-title">Create New Database</h2>
+                <button class="modal-close" onclick="closeModal('create-db-modal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="create-db-form" onsubmit="submitCreateDb(event)">
+                    <div class="form-group">
+                        <label class="form-label">Database Name</label>
+                        <input type="text" class="form-control" id="new-db-name" 
+                               placeholder="e.g., my_portfolio" required>
+                        <span class="form-hint">.db extension will be added automatically</span>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('create-db-modal')">Cancel</button>
+                <button class="btn btn-primary" onclick="submitCreateDb(event)">
+                    <i class="fas fa-plus"></i> Create
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <script>
+        // ============== Global State ==============
+        let portfolioData = [];
+        let assetsData = [];
+        let watchlistData = [];
+        let transactionsData = [];
+        let popularAssets = [];
+        let allocationChart = null;
+        let performanceChart = null;
+
+        // ============== Initialization ==============
+        document.addEventListener('DOMContentLoaded', () => {
+            initNavigation();
+            initSearchSelect();
+            initTransactionCalculator();
+            loadDatabases();
+            loadAllData();
+            setDefaultDate();
+        });
+
+        function initNavigation() {
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const page = item.dataset.page;
+                    switchPage(page);
+                });
+            });
+        }
+
+        function switchPage(page) {
+            // Update nav
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.toggle('active', item.dataset.page === page);
+            });
+            // Update pages
+            document.querySelectorAll('.page-section').forEach(section => {
+                section.classList.toggle('active', section.id === `page-${page}`);
+            });
+        }
+
+        function setDefaultDate() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('transaction-date').value = today;
+        }
+
+        // ============== Database Management ==============
+        async function loadDatabases() {
+            try {
+                const res = await fetch('/api/databases');
+                const data = await res.json();
+                if (data.success) {
+                    const select = document.getElementById('database-select');
+                    select.innerHTML = '';
+                    data.data.forEach(db => {
+                        const option = document.createElement('option');
+                        option.value = db.path;
+                        option.textContent = db.name;
+                        option.selected = db.is_current;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (e) {
+                console.error('Failed to load databases:', e);
+            }
+        }
+
+        async function switchDatabase(dbPath) {
+            if (!dbPath) return;
+            
+            try {
+                const res = await fetch('/api/databases/load', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ database: dbPath })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(`Loaded database: ${dbPath}`, 'success');
+                    // Reload all data for new database
+                    await loadAllData();
+                } else {
+                    showToast(data.error || 'Failed to switch database', 'error');
+                    // Reload dropdown to reset selection
+                    await loadDatabases();
+                }
+            } catch (e) {
+                showToast('Failed to switch database', 'error');
+                await loadDatabases();
+            }
+        }
+
+        function openCreateDbModal() {
+            document.getElementById('new-db-name').value = '';
+            openModal('create-db-modal');
+        }
+
+        async function submitCreateDb(event) {
+            if (event) event.preventDefault();
+            
+            const nameInput = document.getElementById('new-db-name');
+            const name = nameInput.value.trim();
+            
+            if (!name) {
+                showToast('Please enter a database name', 'error');
+                return;
+            }
+            
+            try {
+                const res = await fetch('/api/databases/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(`Created database: ${name}`, 'success');
+                    closeModal('create-db-modal');
+                    await loadDatabases();
+                    await loadAllData();
+                } else {
+                    showToast(data.error || 'Failed to create database', 'error');
+                }
+            } catch (e) {
+                showToast('Failed to create database', 'error');
+            }
+        }
+
+        // ============== API Calls ==============
+        async function loadAllData() {
+            await Promise.all([
+                loadPortfolio(),
+                loadAssets(),
+                loadWatchlist(),
+                loadTransactions(),
+                loadPopularAssets()
+            ]);
+            updateCharts();
+            updateLastUpdated();
+        }
+
+        async function loadPortfolio() {
+            try {
+                const res = await fetch('/api/portfolio');
+                const data = await res.json();
+                if (data.success) {
+                    portfolioData = data.data;
+                    renderPortfolioTable();
+                    updateStats();
+                }
+            } catch (e) {
+                showToast('Failed to load portfolio', 'error');
+            }
+        }
+
+        async function loadAssets() {
+            try {
+                const res = await fetch('/api/assets');
+                const data = await res.json();
+                if (data.success) {
+                    assetsData = data.data;
+                    renderAssetsTable();
+                    updateAssetDropdowns();
+                }
+            } catch (e) {
+                showToast('Failed to load assets', 'error');
+            }
+        }
+
+        async function loadWatchlist() {
+            try {
+                const res = await fetch('/api/watchlist');
+                const data = await res.json();
+                if (data.success) {
+                    watchlistData = data.data;
+                    renderWatchlistTable();
+                }
+            } catch (e) {
+                showToast('Failed to load watchlist', 'error');
+            }
+        }
+
+        async function loadTransactions() {
+            try {
+                const res = await fetch('/api/transactions');
+                const data = await res.json();
+                if (data.success) {
+                    transactionsData = data.data;
+                    renderTransactionsTable();
+                }
+            } catch (e) {
+                showToast('Failed to load transactions', 'error');
+            }
+        }
+
+        async function loadPopularAssets() {
+            try {
+                const res = await fetch('/api/popular-assets');
+                const data = await res.json();
+                if (data.success) {
+                    popularAssets = data.data;
+                }
+            } catch (e) {
+                console.error('Failed to load popular assets');
+            }
+        }
+
+        async function refreshPrices() {
+            showToast('Refreshing prices... This may take a moment.', 'info');
+            try {
+                const res = await fetch('/api/prices/refresh', { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(`Updated ${data.updated}/${data.total} prices`, 'success');
+                    await loadAllData();
+                } else {
+                    showToast('Failed to refresh prices', 'error');
+                }
+            } catch (e) {
+                showToast('Failed to refresh prices', 'error');
+            }
+        }
+
+        // ============== Rendering ==============
+        function updateStats() {
+            let totalValue = 0;
+            let totalInvested = 0;
+
+            portfolioData.forEach(asset => {
+                totalValue += asset.current_value || 0;
+                totalInvested += asset.total_invested || 0;
+            });
+
+            const pnl = totalValue - totalInvested;
+            const pnlPercent = totalInvested > 0 ? (pnl / totalInvested * 100) : 0;
+
+            document.querySelector('#stat-total-value .stat-value').textContent = formatCurrency(totalValue);
+            document.querySelector('#stat-invested .stat-value').textContent = formatCurrency(totalInvested);
+            document.querySelector('#stat-pnl .stat-value').textContent = formatCurrency(pnl);
+            document.querySelector('#stat-assets .stat-value').textContent = portfolioData.length;
+
+            // Update P&L styling
+            const pnlCard = document.getElementById('stat-pnl');
+            const pnlChange = pnlCard.querySelector('.stat-change');
+            const pnlIcon = pnlCard.querySelector('.stat-icon');
+
+            if (pnl >= 0) {
+                pnlCard.classList.remove('loss');
+                pnlCard.classList.add('profit');
+                pnlChange.className = 'stat-change positive';
+                pnlChange.innerHTML = `<i class="fas fa-arrow-up"></i><span>${pnlPercent.toFixed(2)}%</span>`;
+                pnlIcon.className = 'stat-icon green';
+            } else {
+                pnlCard.classList.remove('profit');
+                pnlCard.classList.add('loss');
+                pnlChange.className = 'stat-change negative';
+                pnlChange.innerHTML = `<i class="fas fa-arrow-down"></i><span>${Math.abs(pnlPercent).toFixed(2)}%</span>`;
+                pnlIcon.className = 'stat-icon red';
+            }
+        }
+
+        function renderPortfolioTable() {
+            const tbody = document.querySelector('#portfolio-table tbody');
+            
+            if (portfolioData.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="9">
+                            <div class="empty-state">
+                                <i class="fas fa-briefcase"></i>
+                                <h3>No holdings yet</h3>
+                                <p>Add assets and transactions to see your portfolio</p>
+                            </div>
+                        </td>
+                    </tr>`;
+                return;
+            }
+
+            tbody.innerHTML = portfolioData.map(asset => `
+                <tr>
+                    <td>
+                        <div class="asset-info">
+                            <div class="asset-icon ${asset.asset_type}">${asset.symbol.slice(0, 2)}</div>
+                            <div>
+                                <div class="asset-name">${asset.name}</div>
+                                <div class="asset-symbol">${asset.symbol}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="badge badge-${asset.asset_type}">${asset.asset_type.toUpperCase()}</span></td>
+                    <td>${formatNumber(asset.total_amount)}</td>
+                    <td>${formatCurrency(asset.current_price)}</td>
+                    <td><strong>${formatCurrency(asset.current_value)}</strong></td>
+                    <td>${formatCurrency(asset.total_invested)}</td>
+                    <td class="${asset.profit_loss >= 0 ? 'positive' : 'negative'}">
+                        ${formatCurrency(asset.profit_loss)}
+                    </td>
+                    <td class="${asset.profit_loss_percent >= 0 ? 'positive' : 'negative'}">
+                        <i class="fas fa-arrow-${asset.profit_loss_percent >= 0 ? 'up' : 'down'}"></i>
+                        ${Math.abs(asset.profit_loss_percent).toFixed(2)}%
+                    </td>
+                    <td>
+                        <div class="action-btns">
+                            <button class="action-btn action-btn-edit" onclick="openUpdatePriceModal('${asset.symbol}', '${asset.name}')" title="Update Price">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="action-btn action-btn-edit" onclick="openAddTransactionModalForAsset('${asset.symbol}')" title="Add Transaction">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderAssetsTable() {
+            const tbody = document.querySelector('#assets-table tbody');
+            
+            if (assetsData.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty-state">
+                                <i class="fas fa-coins"></i>
+                                <h3>No assets yet</h3>
+                                <p>Add your first asset to get started</p>
+                            </div>
+                        </td>
+                    </tr>`;
+                return;
+            }
+
+            tbody.innerHTML = assetsData.map(asset => `
+                <tr>
+                    <td>
+                        <div class="asset-info">
+                            <div class="asset-icon ${asset.asset_type}">${asset.symbol.slice(0, 2)}</div>
+                            <div>
+                                <div class="asset-name">${asset.name}</div>
+                                <div class="asset-symbol">${asset.symbol}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="badge badge-${asset.asset_type}">${asset.asset_type.toUpperCase()}</span></td>
+                    <td>${asset.platform || '-'}</td>
+                    <td>${formatCurrency(asset.current_price)}</td>
+                    <td>${formatDate(asset.last_updated)}</td>
+                    <td>
+                        <div class="action-btns">
+                            <button class="action-btn action-btn-watch ${asset.in_watchlist ? 'active' : ''}" 
+                                    onclick="toggleWatchlist('${asset.symbol}')" title="Toggle Watchlist">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="action-btn action-btn-edit" onclick="openUpdatePriceModal('${asset.symbol}', '${asset.name}')" title="Update Price">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="action-btn action-btn-delete" onclick="deleteAsset('${asset.symbol}')" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderWatchlistTable() {
+            const tbody = document.querySelector('#watchlist-table tbody');
+            
+            if (watchlistData.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty-state">
+                                <i class="fas fa-eye"></i>
+                                <h3>Watchlist is empty</h3>
+                                <p>Add assets to your watchlist to track their prices</p>
+                            </div>
+                        </td>
+                    </tr>`;
+                return;
+            }
+
+            tbody.innerHTML = watchlistData.map(asset => `
+                <tr>
+                    <td>
+                        <div class="asset-info">
+                            <div class="asset-icon ${asset.asset_type}">${asset.symbol.slice(0, 2)}</div>
+                            <div>
+                                <div class="asset-name">${asset.name}</div>
+                                <div class="asset-symbol">${asset.symbol}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="badge badge-${asset.asset_type}">${asset.asset_type.toUpperCase()}</span></td>
+                    <td>${formatCurrency(asset.current_price)}</td>
+                    <td>${formatDate(asset.last_updated)}</td>
+                    <td>${asset.watchlist_notes || '-'}</td>
+                    <td>
+                        <div class="action-btns">
+                            <button class="action-btn action-btn-edit" onclick="openAddTransactionModalForAsset('${asset.symbol}')" title="Add Transaction">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                            <button class="action-btn action-btn-delete" onclick="removeFromWatchlist('${asset.symbol}')" title="Remove from Watchlist">
+                                <i class="fas fa-eye-slash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderTransactionsTable() {
+            const tbody = document.querySelector('#transactions-table tbody');
+            
+            if (transactionsData.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="9">
+                            <div class="empty-state">
+                                <i class="fas fa-history"></i>
+                                <h3>No transactions yet</h3>
+                                <p>Add your first transaction to track your investments</p>
+                            </div>
+                        </td>
+                    </tr>`;
+                return;
+            }
+
+            tbody.innerHTML = transactionsData.map(tx => `
+                <tr>
+                    <td>${formatDate(tx.transaction_date)}</td>
+                    <td><strong>${tx.asset_symbol}</strong></td>
+                    <td><span class="badge badge-${tx.transaction_type}">${tx.transaction_type.toUpperCase()}</span></td>
+                    <td>${formatNumber(tx.amount)}</td>
+                    <td>${formatCurrency(tx.price_per_unit)}</td>
+                    <td><strong>${formatCurrency(tx.total_value)}</strong></td>
+                    <td>${formatCurrency(tx.fees)}</td>
+                    <td>${tx.platform || '-'}</td>
+                    <td>
+                        <div class="action-btns">
+                            <button class="action-btn action-btn-delete" onclick="deleteTransaction(${tx.id})" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function updateAssetDropdowns() {
+            const select = document.getElementById('transaction-asset');
+            select.innerHTML = '<option value="">Select an asset...</option>' +
+                assetsData.map(a => `<option value="${a.symbol}">${a.symbol} - ${a.name}</option>`).join('');
+            
+            // Add event listener for auto-filling price
+            select.addEventListener('change', (e) => {
+                if (e.target.value) {
+                    fillCurrentPrice(e.target.value);
+                }
+            });
+        }
+
+        function updateCharts() {
+            updateAllocationChart();
+            updatePerformanceChart();
+        }
+
+        function updateAllocationChart() {
+            const ctx = document.getElementById('allocation-chart').getContext('2d');
+            
+            // Group by asset type
+            const typeValues = {};
+            portfolioData.forEach(asset => {
+                const type = asset.asset_type;
+                typeValues[type] = (typeValues[type] || 0) + (asset.current_value || 0);
+            });
+
+            const labels = Object.keys(typeValues).map(t => t.toUpperCase());
+            const values = Object.values(typeValues);
+            const colors = {
+                stock: '#3b82f6',
+                etf: '#22c55e',
+                crypto: '#f59e0b',
+                bond: '#8b5cf6',
+                commodity: '#ec4899'
+            };
+            const bgColors = Object.keys(typeValues).map(t => colors[t] || '#64748b');
+
+            if (allocationChart) allocationChart.destroy();
+
+            if (values.length === 0) {
+                ctx.font = '16px Inter';
+                ctx.fillStyle = '#64748b';
+                ctx.textAlign = 'center';
+                ctx.fillText('No data to display', ctx.canvas.width / 2, ctx.canvas.height / 2);
+                return;
+            }
+
+            allocationChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: bgColors,
+                        borderColor: '#1e293b',
+                        borderWidth: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#94a3b8',
+                                padding: 20,
+                                font: { size: 12, family: 'Inter' }
+                            }
+                        }
+                    },
+                    cutout: '65%'
+                }
+            });
+        }
+
+        function updatePerformanceChart() {
+            const ctx = document.getElementById('performance-chart').getContext('2d');
+            
+            const sortedAssets = [...portfolioData].sort((a, b) => (b.current_value || 0) - (a.current_value || 0)).slice(0, 8);
+            const labels = sortedAssets.map(a => a.symbol);
+            const values = sortedAssets.map(a => a.profit_loss_percent || 0);
+            const colors = values.map(v => v >= 0 ? '#22c55e' : '#ef4444');
+
+            if (performanceChart) performanceChart.destroy();
+
+            if (values.length === 0) {
+                ctx.font = '16px Inter';
+                ctx.fillStyle = '#64748b';
+                ctx.textAlign = 'center';
+                ctx.fillText('No data to display', ctx.canvas.width / 2, ctx.canvas.height / 2);
+                return;
+            }
+
+            performanceChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'P&L %',
+                        data: values,
+                        backgroundColor: colors,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            grid: { color: '#334155' },
+                            ticks: { color: '#94a3b8', callback: v => v + '%' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#94a3b8' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateLastUpdated() {
+            const now = new Date();
+            document.getElementById('last-updated').textContent = 
+                `Last updated: ${now.toLocaleTimeString()}`;
+        }
+
+        // ============== Search Select ==============
+        function initSearchSelect() {
+            const input = document.getElementById('asset-search');
+            const dropdown = document.getElementById('asset-search-dropdown');
+            let searchTimeout;
+
+            input.addEventListener('focus', () => {
+                if (input.value.length === 0) {
+                    renderSearchResults(popularAssets.slice(0, 15));
+                }
+                dropdown.classList.add('active');
+            });
+
+            input.addEventListener('input', () => {
+                clearTimeout(searchTimeout);
+                const query = input.value.trim();
+                
+                if (query.length === 0) {
+                    renderSearchResults(popularAssets.slice(0, 15));
+                    return;
+                }
+
+                searchTimeout = setTimeout(async () => {
+                    try {
+                        const res = await fetch(`/api/search/assets?q=${encodeURIComponent(query)}`);
+                        const data = await res.json();
+                        if (data.success) {
+                            renderSearchResults(data.data);
+                        }
+                    } catch (e) {
+                        console.error('Search failed:', e);
+                    }
+                }, 300);
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('#asset-search-select')) {
+                    dropdown.classList.remove('active');
+                }
+            });
+        }
+
+        function renderSearchResults(results) {
+            const dropdown = document.getElementById('asset-search-dropdown');
+            
+            if (results.length === 0) {
+                dropdown.innerHTML = `
+                    <div class="search-select-empty">
+                        <i class="fas fa-search"></i>
+                        <p>No results found</p>
+                    </div>`;
+                dropdown.classList.add('active');
+                return;
+            }
+
+            // Group by type
+            const grouped = {};
+            results.forEach(r => {
+                const type = r.asset_type || 'other';
+                if (!grouped[type]) grouped[type] = [];
+                grouped[type].push(r);
+            });
+
+            let html = '';
+            Object.entries(grouped).forEach(([type, assets]) => {
+                html += `<div class="search-select-category">${type.toUpperCase()}</div>`;
+                assets.forEach(asset => {
+                    html += `
+                        <div class="search-select-item" onclick="selectAsset('${asset.symbol}', '${asset.name.replace(/'/g, "\\'")}', '${asset.asset_type}')">
+                            <div class="asset-icon ${asset.asset_type}">${asset.symbol.slice(0, 2)}</div>
+                            <div>
+                                <div class="asset-name">${asset.symbol}</div>
+                                <div class="asset-symbol">${asset.name}</div>
+                            </div>
+                        </div>`;
+                });
+            });
+
+            dropdown.innerHTML = html;
+            dropdown.classList.add('active');
+        }
+
+        function selectAsset(symbol, name, type) {
+            document.getElementById('asset-symbol').value = symbol;
+            document.getElementById('asset-name').value = name;
+            document.getElementById('asset-type').value = type;
+            document.getElementById('asset-search').value = `${symbol} - ${name}`;
+            document.getElementById('asset-search-dropdown').classList.remove('active');
+        }
+
+        // ============== Transaction Calculator ==============
+        function initTransactionCalculator() {
+            const amountInput = document.getElementById('transaction-amount');
+            const priceInput = document.getElementById('transaction-price');
+            
+            const updateTotal = () => {
+                const amount = parseFloat(amountInput.value) || 0;
+                const price = parseFloat(priceInput.value) || 0;
+                document.getElementById('transaction-total').textContent = formatCurrency(amount * price);
+            };
+
+            amountInput.addEventListener('input', updateTotal);
+            priceInput.addEventListener('input', updateTotal);
+        }
+
+        // ============== Modal Functions ==============
+        function openModal(id) {
+            document.getElementById(id).classList.add('active');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+
+        function openAddAssetModal(watchlistOnly = false) {
+            document.getElementById('add-asset-form').reset();
+            document.getElementById('add-to-watchlist').checked = watchlistOnly;
+            openModal('add-asset-modal');
+        }
+
+        function openAddTransactionModal() {
+            document.getElementById('add-transaction-form').reset();
+            setDefaultDate();
+            document.getElementById('transaction-total').textContent = '€0.00';
+            openModal('add-transaction-modal');
+        }
+
+        function openAddTransactionModalForAsset(symbol) {
+            openAddTransactionModal();
+            document.getElementById('transaction-asset').value = symbol;
+            // Auto-fill current price
+            fillCurrentPrice(symbol);
+        }
+
+        function fillCurrentPrice(symbol) {
+            // Find asset in our loaded data
+            const asset = assetsData.find(a => a.symbol === symbol);
+            if (asset && asset.current_price > 0) {
+                document.getElementById('transaction-price').value = asset.current_price.toFixed(2);
+                // Trigger total calculation
+                const amountInput = document.getElementById('transaction-amount');
+                if (amountInput.value) {
+                    const amount = parseFloat(amountInput.value) || 0;
+                    document.getElementById('transaction-total').textContent = formatCurrency(amount * asset.current_price);
+                }
+            }
+        }
+
+        function openUpdatePriceModal(symbol, name) {
+            document.getElementById('update-price-symbol').value = symbol;
+            document.getElementById('update-price-asset-name').textContent = `${symbol} - ${name}`;
+            document.getElementById('update-price-value').value = '';
+            openModal('update-price-modal');
+        }
+
+        // ============== Form Submissions ==============
+        async function submitAddAsset() {
+            const symbol = document.getElementById('asset-symbol').value.trim().toUpperCase();
+            const name = document.getElementById('asset-name').value.trim();
+            const assetType = document.getElementById('asset-type').value;
+            const platform = document.getElementById('asset-platform').value.trim();
+            const addToWatchlist = document.getElementById('add-to-watchlist').checked;
+
+            if (!symbol || !name) {
+                showToast('Symbol and name are required', 'error');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/assets', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ symbol, name, asset_type: assetType, platform })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    if (addToWatchlist) {
+                        await fetch('/api/watchlist', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ symbol })
+                        });
+                    }
+                    showToast(`Asset ${symbol} added successfully!`, 'success');
+                    closeModal('add-asset-modal');
+                    await loadAllData();
+                } else {
+                    showToast(data.error || 'Failed to add asset', 'error');
+                }
+            } catch (e) {
+                showToast('Failed to add asset', 'error');
+            }
+        }
+
+        async function submitAddTransaction() {
+            const assetSymbol = document.getElementById('transaction-asset').value;
+            const transactionType = document.getElementById('transaction-type').value;
+            const amount = parseFloat(document.getElementById('transaction-amount').value);
+            const pricePerUnit = parseFloat(document.getElementById('transaction-price').value);
+            const fees = parseFloat(document.getElementById('transaction-fees').value) || 0;
+            const platform = document.getElementById('transaction-platform').value.trim();
+            const transactionDate = document.getElementById('transaction-date').value;
+            const notes = document.getElementById('transaction-notes').value.trim();
+
+            if (!assetSymbol || !amount || !pricePerUnit) {
+                showToast('Please fill in all required fields', 'error');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/transactions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        asset_symbol: assetSymbol,
+                        transaction_type: transactionType,
+                        amount,
+                        price_per_unit: pricePerUnit,
+                        fees,
+                        platform,
+                        transaction_date: transactionDate,
+                        notes
+                    })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    showToast('Transaction added successfully!', 'success');
+                    closeModal('add-transaction-modal');
+                    await loadAllData();
+                } else {
+                    showToast(data.error || 'Failed to add transaction', 'error');
+                }
+            } catch (e) {
+                showToast('Failed to add transaction', 'error');
+            }
+        }
+
+        async function submitUpdatePrice() {
+            const symbol = document.getElementById('update-price-symbol').value;
+            const price = parseFloat(document.getElementById('update-price-value').value);
+
+            if (!price || price <= 0) {
+                showToast('Please enter a valid price', 'error');
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/assets/${symbol}/price`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ price })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    showToast(`Price for ${symbol} updated!`, 'success');
+                    closeModal('update-price-modal');
+                    await loadAllData();
+                } else {
+                    showToast(data.error || 'Failed to update price', 'error');
+                }
+            } catch (e) {
+                showToast('Failed to update price', 'error');
+            }
+        }
+
+        // ============== Actions ==============
+        async function deleteAsset(symbol) {
+            if (!confirm(`Are you sure you want to delete ${symbol} and all its transactions?`)) return;
+
+            try {
+                const res = await fetch(`/api/assets/${symbol}`, { method: 'DELETE' });
+                const data = await res.json();
+
+                if (data.success) {
+                    showToast(`Asset ${symbol} deleted`, 'success');
+                    await loadAllData();
+                } else {
+                    showToast('Failed to delete asset', 'error');
+                }
+            } catch (e) {
+                showToast('Failed to delete asset', 'error');
+            }
+        }
+
+        async function deleteTransaction(id) {
+            if (!confirm('Are you sure you want to delete this transaction?')) return;
+
+            try {
+                const res = await fetch(`/api/transactions/${id}`, { method: 'DELETE' });
+                const data = await res.json();
+
+                if (data.success) {
+                    showToast('Transaction deleted', 'success');
+                    await loadAllData();
+                } else {
+                    showToast('Failed to delete transaction', 'error');
+                }
+            } catch (e) {
+                showToast('Failed to delete transaction', 'error');
+            }
+        }
+
+        async function toggleWatchlist(symbol) {
+            const asset = assetsData.find(a => a.symbol === symbol);
+            if (!asset) return;
+
+            try {
+                if (asset.in_watchlist) {
+                    await fetch(`/api/watchlist/${symbol}`, { method: 'DELETE' });
+                    showToast(`${symbol} removed from watchlist`, 'success');
+                } else {
+                    await fetch('/api/watchlist', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ symbol })
+                    });
+                    showToast(`${symbol} added to watchlist`, 'success');
+                }
+                await loadAllData();
+            } catch (e) {
+                showToast('Failed to update watchlist', 'error');
+            }
+        }
+
+        async function removeFromWatchlist(symbol) {
+            try {
+                await fetch(`/api/watchlist/${symbol}`, { method: 'DELETE' });
+                showToast(`${symbol} removed from watchlist`, 'success');
+                await loadAllData();
+            } catch (e) {
+                showToast('Failed to remove from watchlist', 'error');
+            }
+        }
+
+        // ============== Utilities ==============
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('de-DE', {
+                style: 'currency',
+                currency: 'EUR'
+            }).format(value || 0);
+        }
+
+        function formatNumber(value) {
+            if (value === undefined || value === null) return '0';
+            if (Math.abs(value) < 0.0001) return value.toFixed(8);
+            if (Math.abs(value) < 1) return value.toFixed(6);
+            return new Intl.NumberFormat('de-DE', { maximumFractionDigits: 4 }).format(value);
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('de-DE', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            const icons = {
+                success: 'fa-check-circle',
+                error: 'fa-exclamation-circle',
+                info: 'fa-info-circle'
+            };
+
+            toast.innerHTML = `
+                <i class="fas ${icons[type]} toast-icon"></i>
+                <span>${message}</span>
+            `;
+
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        }
+    </script>
+</body>
+</html>
